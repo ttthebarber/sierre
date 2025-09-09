@@ -1,0 +1,180 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { AppLayout } from "@/components/layout/app-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { shopifyApi } from "@/lib/api/integrations/shopify";
+import { CheckCircle, AlertCircle, Clock, RefreshCw, Trash2 } from "lucide-react";
+
+interface ShopifyStatus {
+  connected: boolean;
+  connected_at: string | null;
+  last_orders_sync_at: string | null;
+  last_products_sync_at: string | null;
+  last_inventory_sync_at: string | null;
+}
+
+
+export default function SettingsPage() {
+  const [shopifyStatus, setShopifyStatus] = useState<ShopifyStatus | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [shop] = useState("demo-store");
+
+  useEffect(() => {
+    const loadStatus = async () => {
+      try {
+        // For now, we'll simulate the status since the API methods don't exist yet
+        // In a real implementation, you'd call the actual API endpoints
+        setShopifyStatus({
+          connected: false,
+          connected_at: null,
+          last_orders_sync_at: null,
+          last_products_sync_at: null,
+          last_inventory_sync_at: null,
+        });
+      } catch (error) {
+        console.error("Failed to load integration status:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadStatus();
+  }, [shop]);
+
+  const handleSync = async () => {
+    try {
+      await shopifyApi.sync(shop);
+      alert('Shopify store synced successfully!');
+      window.location.reload();
+    } catch (error: any) {
+      alert(`Failed to sync Shopify: ${error.message}`);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm('Are you sure you want to disconnect your Shopify store?')) return;
+    try {
+      await shopifyApi.disconnect(shop);
+      alert('Shopify store disconnected successfully!');
+      window.location.reload();
+    } catch (error: any) {
+      alert(`Failed to disconnect Shopify: ${error.message}`);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <AppLayout title="Settings">
+        <div className="animate-pulse space-y-6">
+          <div className="h-32 bg-gray-200 rounded-xl"></div>
+          <div className="h-32 bg-gray-200 rounded-xl"></div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout title="Settings">
+      <div className="space-y-6">
+        {/* Connected Store */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Connected Store</CardTitle>
+            <CardDescription>
+              Manage your connected Shopify store
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Shopify */}
+            <div className="border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                    <img src="/Shopify_logo_2018.svg" alt="Shopify" className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-gray-900">Shopify</h3>
+                    <p className="text-sm text-gray-600">{shop}.myshopify.com</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {shopifyStatus?.connected ? (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  ) : (
+                    <AlertCircle className="h-5 w-5 text-gray-400" />
+                  )}
+                  <Badge variant={shopifyStatus?.connected ? "default" : "secondary"}>
+                    {shopifyStatus?.connected ? "Connected" : "Not Connected"}
+                  </Badge>
+                </div>
+              </div>
+
+              {shopifyStatus?.connected && (
+                <div className="space-y-2 mb-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Connected: {shopifyStatus.connected_at ? new Date(shopifyStatus.connected_at).toLocaleDateString() : "Unknown"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Last Orders Sync: {shopifyStatus.last_orders_sync_at ? new Date(shopifyStatus.last_orders_sync_at).toLocaleString() : "Never"}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Last Products Sync: {shopifyStatus.last_products_sync_at ? new Date(shopifyStatus.last_products_sync_at).toLocaleString() : "Never"}</span>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2">
+                {shopifyStatus?.connected ? (
+                  <>
+                    <Button onClick={handleSync} size="sm" variant="outline">
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Sync Now
+                    </Button>
+                    <Button onClick={handleDisconnect} variant="outline" size="sm">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Disconnect
+                    </Button>
+                  </>
+                ) : (
+                  <Button asChild size="sm" className="bg-black hover:bg-gray-900 text-white">
+                    <a href="/integrations">Connect Shopify</a>
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Billing & Subscription */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Billing & Subscription</CardTitle>
+            <CardDescription>
+              Manage your subscription and billing information
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Current Plan</p>
+                <p className="text-sm text-gray-600">Free Plan</p>
+              </div>
+              <Button variant="outline">Upgrade Plan</Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Next Billing Date</p>
+                <p className="text-sm text-gray-600">No active subscription</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </AppLayout>
+  );
+}
