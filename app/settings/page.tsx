@@ -91,8 +91,8 @@ export default function SettingsPage() {
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <img src="/Shopify_logo_2018.svg" alt="Shopify" className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                    <img src="/shopify_glyph.svg" alt="Shopify" className="w-auto h-full" />
                   </div>
                   <div>
                     <h3 className="font-medium text-gray-900">Shopify</h3>

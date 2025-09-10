@@ -45,7 +45,7 @@ const navigation = [
     name: "Settings",
     href: "/settings",
     icon: Settings,
-  },
+  }
 ];
 
 // Component to display user name
@@ -86,10 +86,7 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
           {/* Logo/Brand */}
           <div className="flex items-center justify-between p-3">
             <div className="flex items-center space-x-2">
-              <div className="w-6 h-6 bg-gray-900 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xs">S</span>
-              </div>
-              <span className="font-semibold text-gray-900 text-sm">Sierre</span>
+              <span className="font-semibold text-gray-900 text-md">Sierre</span>
             </div>
             <Button
               variant="ghost"

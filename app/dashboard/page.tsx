@@ -461,8 +461,6 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
-
 // ---- Unified KPI Dashboard ----
 function UnifiedKpiDashboard() {
   // Start with empty stores
@@ -572,3 +570,5 @@ function UnifiedKpiDashboard() {
     </div>
   );
 }
+
+export default Dashboard;
