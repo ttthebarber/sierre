@@ -31,7 +31,7 @@ export default function IntegrationsPage() {
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                       <img 
-                        src="/Shopify_logo_2018.svg" 
+                        src="/shopify_glyph.svg" 
                         alt="Shopify" 
                       className="w-6 h-6"
                       />
@@ -78,4 +78,5 @@ export default function IntegrationsPage() {
                     </div>
     </AppLayout>
   )
+
 }
