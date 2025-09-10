@@ -29,11 +29,11 @@ export default function IntegrationsPage() {
                 <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-lg flex items-center justify-center">
                       <img 
                         src="/shopify_glyph.svg" 
                         alt="Shopify" 
-                      className="w-6 h-6"
+                      className="w-auto h-full"
                       />
                     </div>
                   <div>
@@ -80,3 +80,4 @@ export default function IntegrationsPage() {
   )
 
 }
+
