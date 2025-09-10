@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-sdfsckm
-=======
 # Sierre - KPI Tracker
 
 A comprehensive KPI tracking application built with Next.js, TypeScript, and modern web technologies. Track your business metrics across multiple Shopify stores with real-time data synchronization and beautiful visualizations.
