@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { shopifyApi } from "@/lib/api/integrations/shopify";
 import { CheckCircle, AlertCircle, Clock, RefreshCw, Trash2 } from "lucide-react";
+import { FadeIn } from "@/components/ui/fade-in";
 
 interface ShopifyStatus {
   connected: boolean;
@@ -77,7 +78,8 @@ export default function SettingsPage() {
 
   return (
     <AppLayout title="Settings">
-      <div className="space-y-6">
+      <FadeIn>
+        <div className="space-y-6">
         {/* Connected Store */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader>
@@ -150,6 +152,42 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
+        {/* AI Insights */}
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">AI Insights</CardTitle>
+            <CardDescription>
+              Configure AI-powered insights and recommendations
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">AI Analysis</p>
+                <p className="text-sm text-gray-600">Enabled - Analyzing your store data</p>
+              </div>
+              <Badge variant="outline" className="text-green-600 border-green-200">
+                Active
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Insights Generated</p>
+                <p className="text-sm text-gray-600">12 actionable insights this month</p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <a href="/insights">View All</a>
+              </Button>
+            </div>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">High Impact Opportunities</p>
+                <p className="text-sm text-gray-600">4 recommendations ready to implement</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Billing & Subscription */}
         <Card className="border-gray-200 shadow-sm">
           <CardHeader>
@@ -174,7 +212,8 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+        </div>
+      </FadeIn>
     </AppLayout>
   );
 }

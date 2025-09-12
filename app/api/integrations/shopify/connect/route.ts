@@ -4,6 +4,16 @@ import { createSupabaseServerClient } from '@/lib/supabaseServer'
 // /api/integrations/shopify/connect/route.ts
 export async function GET(request: NextRequest) {
     const { userId } = await auth()
+    
+    // Debug logging
+    console.log('=== AUTH DEBUG ===')
+    console.log('User ID:', userId)
+    console.log('Clerk keys set:', {
+      publishable: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+      secret: !!process.env.CLERK_SECRET_KEY
+    })
+    console.log('==================')
+    
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   
     try {

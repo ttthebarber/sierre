@@ -1,29 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@clerk/nextjs/server';
+import { createSupabaseServerClient } from '@/lib/supabaseServer';
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const shop = searchParams.get('shop') ?? ''
-  if (!shop) return NextResponse.json({ error: 'Missing shop' }, { status: 400 })
+export async function GET(request: NextRequest) {
+  try {
+    const { userId } = await auth();
 
-  const { data: store } = await supabaseServer
-    .from('shopify_stores')
-    .select('shop, created_at')
-    .eq('shop', shop)
-    .maybeSingle()
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-  const { data: sync } = await supabaseServer
-    .from('sync_status')
-    .select('orders_last_sync_at, products_last_sync_at, inventory_last_sync_at, updated_at')
-    .eq('shop', shop)
-    .maybeSingle()
+    const supabase = await createSupabaseServerClient();
 
-  return NextResponse.json({
-    shop,
-    connected: !!store,
-    connected_at: store?.created_at ?? null,
-    sync: sync ?? null,
-  })
+    // Check if user has any Shopify stores connected
+    const { data: stores, error } = await supabase
+      .from('stores')
+      .select('id, name, platform, connected_at')
+      .eq('user_id', userId)
+      .eq('platform', 'shopify')
+      .eq('connected', true);
+
+    if (error) {
+      console.error('Error fetching Shopify stores:', error);
+      return NextResponse.json({ error: 'Failed to fetch store status' }, { status: 500 });
+    }
+
+    // Return connection status
+    const isConnected = stores && stores.length > 0;
+    
+    return NextResponse.json({
+      connected: isConnected,
+      stores: stores || [],
+      connected_at: isConnected ? stores[0]?.connected_at : null,
+    });
+
+  } catch (error) {
+    console.error('Shopify status error:', error);
+    return NextResponse.json({ error: 'Failed to check Shopify status' }, { status: 500 });
+  }
 }
-
-

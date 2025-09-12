@@ -38,6 +38,8 @@ import {
   Share2,
   Download,
 } from "lucide-react";
+import { InsightsPanel } from "@/components/ai/insights-panel";
+import { FadeIn } from "@/components/ui/fade-in";
 
 // ---- Utilities ----
 const fmtCurrency = (n: number) =>
@@ -515,59 +517,67 @@ function UnifiedKpiDashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header Row */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <StoreSwitcher
-            stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
-            value={selected}
-            onChange={setSelected}
-            onAdd={handleAddStore}
-          />
-        </div>
-      </div>
-
-      {/* Portfolio Health (always visible, default 0/—) */}
-      <PortfolioHealth
-        stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
-        totals={totals}
-        bestStoreId={bestStoreId}
-        attentionStoreId={attentionStoreId}
-        healthScore={healthScore}
-      />
-
-      {stores.length === 0 ? (
-        <div className="flex items-center justify-center py-16">
-          <div className="text-center space-y-4">
-            <h2 className="text-xl font-semibold text-gray-900">No store connected yet</h2>
-            <p className="text-gray-600">
-              Connect your Shopify store to see KPIs here.
-            </p>
-            <Button
-              className="bg-black hover:bg-gray-900 text-white"
-              onClick={() => (window.location.href = "/integrations")}
-            >
-              Connect Shopify Store
-            </Button>
+    <FadeIn>
+      <div className="max-w-7xl mx-auto">
+        {/* Header Row */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <StoreSwitcher
+              stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
+              value={selected}
+              onChange={setSelected}
+              onAdd={handleAddStore}
+            />
           </div>
         </div>
-      ) : (
-        <>
-          <CrossStoreInsights />
-          <StorePerformanceGrid
-            stores={stores.map((s) => ({
-              id: s.id,
-              name: s.name,
-              platform: s.platform,
-              metrics: { ...s.metrics },
-            }))}
-            onOpen={(id) => console.log("Open store", id)}
-          />
-          <MultiStoreCharts stores={stores} activeStoreIds={active} onToggleStore={toggleStore} />
-        </>
-      )}
-    </div>
+
+        {/* Portfolio Health (always visible, default 0/—) */}
+        <PortfolioHealth
+          stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
+          totals={totals}
+          bestStoreId={bestStoreId}
+          attentionStoreId={attentionStoreId}
+          healthScore={healthScore}
+        />
+
+        {stores.length === 0 ? (
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900">No store connected yet</h2>
+              <p className="text-gray-600">
+                Connect your Shopify store to see KPIs and AI insights here.
+              </p>
+              <Button
+                className="bg-black hover:bg-gray-900 text-white"
+                onClick={() => (window.location.href = "/integrations")}
+              >
+                Connect Shopify Store
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <CrossStoreInsights />
+            
+            {/* AI Insights Panel */}
+            <div className="mb-6">
+              <InsightsPanel storeId={selected === "all" ? undefined : selected} timeRange="30d" />
+            </div>
+            
+            <StorePerformanceGrid
+              stores={stores.map((s) => ({
+                id: s.id,
+                name: s.name,
+                platform: s.platform,
+                metrics: { ...s.metrics },
+              }))}
+              onOpen={(id) => console.log("Open store", id)}
+            />
+            <MultiStoreCharts stores={stores} activeStoreIds={active} onToggleStore={toggleStore} />
+          </>
+        )}
+      </div>
+    </FadeIn>
   );
 }
 

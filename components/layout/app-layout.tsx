@@ -12,7 +12,8 @@ import {
   MoreHorizontal,
   Share2,
   User,
-  CloudLightning
+  CloudLightning,
+  Brain
 } from "lucide-react";
 import { UserButton, SignedIn, SignedOut, useUser, SignInButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils";
@@ -23,6 +24,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ErrorProvider } from "@/lib/contexts/error-context";
+import { ErrorDisplay } from "@/components/ui/error-display";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -35,6 +38,11 @@ const navigation = [
     name: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    name: "Insights",
+    href: "/insights",
+    icon: Brain,
   },
   {
     name: "Integrations",
@@ -68,7 +76,8 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-white">
+    <ErrorProvider>
+      <div className="min-h-screen bg-white">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -201,6 +210,10 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
           </div>
         </main>
       </div>
-    </div>
+      </div>
+      
+      {/* Error Display */}
+      <ErrorDisplay />
+    </ErrorProvider>
   );
 }
