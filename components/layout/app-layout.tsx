@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ErrorProvider } from "@/lib/contexts/error-context";
 import { ErrorDisplay } from "@/components/ui/error-display";
+import { AuthGuard } from "@/components/auth/auth-guard";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -77,7 +78,8 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
 
   return (
     <ErrorProvider>
-      <div className="min-h-screen bg-white">
+      <AuthGuard>
+        <div className="min-h-screen bg-white">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div 
@@ -210,10 +212,11 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
           </div>
         </main>
       </div>
-      </div>
-      
-      {/* Error Display */}
-      <ErrorDisplay />
+        </div>
+        
+        {/* Error Display */}
+        <ErrorDisplay />
+      </AuthGuard>
     </ErrorProvider>
   );
 }
