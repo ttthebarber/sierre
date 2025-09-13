@@ -20,12 +20,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
   CartesianGrid,
   XAxis,
   YAxis,
-  Legend,
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
@@ -38,6 +35,8 @@ import {
   Store,
   Share2,
   Download,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { InsightsPanel } from "@/components/ai/insights-panel";
 import { FadeIn } from "@/components/ui/fade-in";
@@ -70,7 +69,7 @@ function StoreSwitcher({
     <div className="flex items-center gap-3">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="flex items-center gap-2 border-gray-300 bg-white hover:bg-gray-100 text-black">
+          <Button variant="outline" className="flex items-center gap-2 border-gray-300 bg-white hover:bg-gray-200 text-black">
             <Store className="h-4 w-4" />
             <span className="truncate max-w-[200px]">
               {value === "all" ? "All Stores" : stores.find((s) => s.id === value)?.name || "Select store"}
@@ -82,11 +81,11 @@ function StoreSwitcher({
           <DropdownMenuLabel className="text-black">Switch store</DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-gray-200" />
           <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-            <DropdownMenuRadioItem value="all" className="text-black hover:bg-gray-100">
+            <DropdownMenuRadioItem value="all" className="text-black hover:bg-gray-200">
               All Stores
             </DropdownMenuRadioItem>
             {stores.map((s) => (
-              <DropdownMenuRadioItem key={s.id} value={s.id} className="text-black hover:bg-gray-100">
+              <DropdownMenuRadioItem key={s.id} value={s.id} className="text-black hover:bg-gray-200">
                 <span className={`inline-flex items-center gap-2`}>
                   <span className={`h-2 w-2 rounded-full ${PLATFORM_META[s.platform].tint.replace("bg-", "bg-")}`}></span>
                   <span className="truncate">{s.name}</span>
@@ -190,8 +189,13 @@ function PortfolioHealth({
 }
 
 // ---- Cross‑Store Insights ----
-function CrossStoreInsights() {
-  const items = [
+function CrossStoreInsights({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
+  // Show empty state when no stores are connected
+  const items = stores.length === 0 ? [
+    { text: "Connect your first store to see personalized insights and recommendations", trend: "neutral" as const },
+    { text: "AI-powered analytics will help optimize your store performance", trend: "neutral" as const },
+    { text: "Get real-time recommendations based on your store data", trend: "neutral" as const },
+  ] : [
     { text: "Your Shopify store is performing well with consistent growth", trend: "up" as const },
     { text: "Mobile traffic has increased 25% this month", trend: "up" as const },
     { text: "Consider optimizing checkout flow to reduce cart abandonment", trend: "neutral" as const },
@@ -206,13 +210,18 @@ function CrossStoreInsights() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-yellow-300 flex items-center justify-center text-black">
-              <span>💡</span>
+            <div className="h-6 w-6 flex items-center justify-center text-blue-500">
+              <span><Lightbulb className="h-6 w-6" /></span>
             </div>
             <CardTitle className="text-black">Store Insights</CardTitle>
           </div>
         </div>
-        <CardDescription className="text-gray-600">Intelligent insights and recommendations for your Shopify store.</CardDescription>
+        <CardDescription className="text-gray-600">
+          {stores.length === 0 
+            ? "Connect your store to get intelligent insights and recommendations."
+            : "Intelligent insights and recommendations for your Shopify store."
+          }
+        </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
         <ul className="space-y-2">
@@ -343,7 +352,7 @@ function MultiStoreCharts({
                 { v: "90d", l: "90d" },
                 { v: "1y", l: "1y" },
               ].map((t) => (
-                <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-yellow-100 data-[state=active]:text-black">
+                <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-gray-200 data-[state=active]:text-black">
                   {t.l}
                 </TabsTrigger>
               ))}
@@ -352,7 +361,7 @@ function MultiStoreCharts({
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-300 text-black">
+              <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-200 text-black">
                 Metric: {metric}
                 <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
@@ -362,7 +371,7 @@ function MultiStoreCharts({
               <DropdownMenuSeparator className="bg-gray-200" />
               <DropdownMenuRadioGroup value={metric} onValueChange={(v) => setMetric(v as any)}>
                 {["revenue", "orders", "aov"].map((m) => (
-                  <DropdownMenuRadioItem key={m} value={m} className="text-black hover:bg-gray-300 capitalize">
+                  <DropdownMenuRadioItem key={m} value={m} className="text-black hover:bg-gray-200 capitalize">
                     {m}
                   </DropdownMenuRadioItem>
                 ))}
@@ -372,7 +381,7 @@ function MultiStoreCharts({
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="border-gray-200 bg-white text-black hover:bg-gray-300" onClick={exportCsv}>
+          <Button variant="outline" className="border-gray-200 bg-white text-black hover:bg-gray-200" onClick={exportCsv}>
             <Download className="h-4 w-4 mr-2" /> Export
           </Button>
           <Button className="bg-black hover:bg-gray-900 text-white">
@@ -417,38 +426,6 @@ function MultiStoreCharts({
                   ) : null
                 )}
               </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Store comparison (bars) */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-black">Store Performance Comparison</CardTitle>
-          <CardDescription className="text-gray-600">Revenue, Orders, and AOV compared across stores.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={stores.map((s) => ({
-                  name: s.name,
-                  Revenue: s.summary.revenue,
-                  Orders: s.summary.orders,
-                  AOV: s.summary.aov,
-                }))}
-                margin={{ left: 12, right: 12, top: 10 }}
-              >
-                <CartesianGrid vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fill: "#374151" }} />
-                <YAxis tick={{ fill: "#374151" }} />
-                <Tooltip contentStyle={{ borderRadius: 8 }} />
-                <Legend />
-                <Bar dataKey="Revenue" fill="#F59E0B" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="Orders" fill="#111827" radius={[6, 6, 0, 0]} />
-                <Bar dataKey="AOV" fill="#9CA3AF" radius={[6, 6, 0, 0]} />
-              </BarChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
@@ -498,6 +475,28 @@ function UnifiedKpiDashboard() {
       });
       // Clear the URL parameters
       window.history.replaceState({}, '', '/dashboard');
+    } else {
+      // Check for connection status in cookies (fallback for auth redirects)
+      const cookieStatus = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('shopify_connection_status='))
+        ?.split('=')[1];
+      
+      if (cookieStatus === 'success') {
+        setConnectionStatus({
+          type: 'success',
+          message: 'Shopify store connected successfully!'
+        });
+        // Clear the cookie
+        document.cookie = 'shopify_connection_status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      } else if (cookieStatus === 'error') {
+        setConnectionStatus({
+          type: 'error',
+          message: 'Connection failed. Please try again.'
+        });
+        // Clear the cookie
+        document.cookie = 'shopify_connection_status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      }
     }
   }, [searchParams]);
 
@@ -506,7 +505,6 @@ function UnifiedKpiDashboard() {
     const loadStores = async () => {
       try {
         // Fetch connected stores
-        const storesData = await apiClient.get('/integrations/status', false) as { stores?: any[] };
         const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean, stores?: any[] };
         
         // Process store data
@@ -624,7 +622,7 @@ function UnifiedKpiDashboard() {
           }`}>
             <div className="flex items-center justify-between">
               <span className="font-medium">
-                {connectionStatus.type === 'success' ? '✅' : '❌'} {connectionStatus.message}
+                {connectionStatus.type === 'success' ? <CheckCircle className="h-4 w-4 mr-2" /> : <XCircle className="h-4 w-4 mr-2" />} {connectionStatus.message}
               </span>
               <button 
                 onClick={() => setConnectionStatus({type: null, message: ''})}
@@ -657,42 +655,24 @@ function UnifiedKpiDashboard() {
           healthScore={healthScore}
         />
 
-        {stores.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">No store connected yet</h2>
-              <p className="text-gray-600">
-                Connect your Shopify store to see KPIs and AI insights here.
-              </p>
-              <Button
-                className="bg-black hover:bg-gray-900 text-white"
-                onClick={() => (window.location.href = "/integrations")}
-              >
-                Connect Shopify Store
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <CrossStoreInsights />
-            
-            {/* AI Insights Panel */}
-            <div className="mb-6">
-              <InsightsPanel storeId={selected === "all" ? undefined : selected} timeRange="30d" />
-            </div>
-            
-            <StorePerformanceGrid
-              stores={stores.map((s) => ({
-                id: s.id,
-                name: s.name,
-                platform: s.platform,
-                metrics: { ...s.metrics },
-              }))}
-              onOpen={(id) => console.log("Open store", id)}
-            />
-            <MultiStoreCharts stores={stores} activeStoreIds={active} onToggleStore={toggleStore} />
-          </>
-        )}
+        {/* Always show the full dashboard with empty states when no stores */}
+        <CrossStoreInsights stores={stores} />
+        
+        {/* AI Insights Panel */}
+        <div className="mb-6">
+          <InsightsPanel storeId={selected === "all" ? undefined : selected} timeRange="30d" />
+        </div>
+        
+        <StorePerformanceGrid
+          stores={stores.map((s) => ({
+            id: s.id,
+            name: s.name,
+            platform: s.platform,
+            metrics: { ...s.metrics },
+          }))}
+          onOpen={(id) => console.log("Open store", id)}
+        />
+        <MultiStoreCharts stores={stores} activeStoreIds={active} onToggleStore={toggleStore} />
       </div>
     </FadeIn>
   );

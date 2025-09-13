@@ -65,10 +65,25 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Successfully stored Shopify connection')
-    return NextResponse.redirect(new URL('/dashboard?connected=shopify', request.url))
+    // Store connection status in a cookie that will persist through redirects
+    const response = NextResponse.redirect(new URL('/dashboard?connected=shopify', request.url))
+    response.cookies.set('shopify_connection_status', 'success', {
+      maxAge: 60, // 1 minute
+      httpOnly: false, // Allow client-side access
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    })
+    return response
   } catch (error) {
     console.error('Shopify callback error:', error)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
-    return NextResponse.redirect(new URL(`/dashboard?error=connection_failed&details=${encodeURIComponent(errorMessage)}`, request.url))
+    const response = NextResponse.redirect(new URL(`/dashboard?error=connection_failed&details=${encodeURIComponent(errorMessage)}`, request.url))
+    response.cookies.set('shopify_connection_status', 'error', {
+      maxAge: 60, // 1 minute
+      httpOnly: false, // Allow client-side access
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    })
+    return response
   }
 }
