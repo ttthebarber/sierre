@@ -51,14 +51,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
         {children}
       </SignedIn>
       <SignedOut>
-        {/* Dashboard layout with authentication modal overlay */}
-        <div className="min-h-screen bg-gray-50 relative">
-          {/* Dashboard content (always visible, blurred when modal is open) */}
-          <div className={`transition-all duration-300 ${showModal ? 'blur-md pointer-events-none' : ''}`}>
-            {children}
-          </div>
-
-          {/* Modal backdrop - positioned absolutely over the dashboard */}
+        {/* Show authentication modal without dashboard content */}
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          {/* Modal backdrop */}
           {showModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-30">
               <div className="relative">

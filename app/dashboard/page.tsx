@@ -41,6 +41,8 @@ import {
 } from "lucide-react";
 import { InsightsPanel } from "@/components/ai/insights-panel";
 import { FadeIn } from "@/components/ui/fade-in";
+import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
+import { useSearchParams } from "next/navigation";
 
 // ---- Utilities ----
 const fmtCurrency = (n: number) =>
@@ -468,11 +470,81 @@ const Dashboard = () => {
 
 // ---- Unified KPI Dashboard ----
 function UnifiedKpiDashboard() {
-  // Start with empty stores
-  const [stores] = React.useState<any[]>([]);
-
+  const apiClient = useApiClientSafe();
+  const searchParams = useSearchParams();
+  const [stores, setStores] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [selected, setSelected] = React.useState<string>("all");
   const [active, setActive] = React.useState<string[]>([]);
+  const [connectionStatus, setConnectionStatus] = React.useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
+
+  // Handle query parameters for connection status
+  React.useEffect(() => {
+    const connected = searchParams.get('connected');
+    const error = searchParams.get('error');
+    const details = searchParams.get('details');
+
+    if (connected === 'shopify') {
+      setConnectionStatus({
+        type: 'success',
+        message: 'Shopify store connected successfully!'
+      });
+      // Clear the URL parameters
+      window.history.replaceState({}, '', '/dashboard');
+    } else if (error) {
+      setConnectionStatus({
+        type: 'error',
+        message: details ? decodeURIComponent(details) : 'Connection failed. Please try again.'
+      });
+      // Clear the URL parameters
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [searchParams]);
+
+  // Load store data on component mount
+  React.useEffect(() => {
+    const loadStores = async () => {
+      try {
+        // Fetch connected stores
+        const storesData = await apiClient.get('/integrations/status', false) as { stores?: any[] };
+        const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean, stores?: any[] };
+        
+        // Process store data
+        const processedStores: any[] = [];
+        
+        if (shopifyData.connected && shopifyData.stores) {
+          shopifyData.stores.forEach((store: any) => {
+            processedStores.push({
+              id: store.id || store.name,
+              name: store.name,
+              platform: 'shopify',
+              summary: {
+                revenue: store.revenue || 0,
+                orders: store.orders || 0,
+                aov: store.aov || 0,
+                conversion: store.conversion_rate || 0,
+              },
+              metrics: {
+                health: store.is_connected ? 'good' : 'warning',
+                growth: store.growth_rate || 0,
+                inventory: store.inventory_status || 'normal',
+              }
+            });
+          });
+        }
+        
+        setStores(processedStores);
+      } catch (error) {
+        console.error('Failed to load stores:', error);
+        // Keep empty stores array on error
+        setStores([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStores();
+  }, [apiClient]);
 
   const activeStores = selected === "all" ? stores : stores.filter((s) => s.id === selected);
 
@@ -519,9 +591,51 @@ function UnifiedKpiDashboard() {
     window.location.href = "/integrations";
   };
 
+  // Show loading state while fetching stores
+  if (loading) {
+    return (
+      <FadeIn>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-16">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900">Loading Dashboard...</h2>
+              <p className="text-gray-600">
+                Please wait while we load your store data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </FadeIn>
+    );
+  }
+
   return (
     <FadeIn>
       <div className="max-w-7xl mx-auto">
+        {/* Connection Status Notification */}
+        {connectionStatus.type && (
+          <div className={`mb-4 p-4 rounded-lg border ${
+            connectionStatus.type === 'success' 
+              ? 'bg-green-50 border-green-200 text-green-800' 
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
+            <div className="flex items-center justify-between">
+              <span className="font-medium">
+                {connectionStatus.type === 'success' ? '✅' : '❌'} {connectionStatus.message}
+              </span>
+              <button 
+                onClick={() => setConnectionStatus({type: null, message: ''})}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Header Row */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">

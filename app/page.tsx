@@ -1,30 +1,47 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 
 const Page = () => {
   const router = useRouter();
+  const { isSignedIn, isLoaded } = useUser();
   const [isRedirecting, setIsRedirecting] = useState(true);
 
   useEffect(() => {
-    // Add a small delay to ensure the page is fully loaded before redirecting
+    // Only redirect after auth state is loaded
+    if (!isLoaded) return;
+
+    // Add a small delay to ensure smooth transition
     const timer = setTimeout(() => {
       router.push('/dashboard');
       setIsRedirecting(false);
     }, 100);
 
-    // Fallback redirect in case the first one doesn't work
-    const fallbackTimer = setTimeout(() => {
-      window.location.href = '/dashboard';
-    }, 2000);
+    return () => clearTimeout(timer);
+  }, [isLoaded, router]);
 
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(fallbackTimer);
-    };
-  }, [router]);
+  // Show loading while auth state is being determined
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-900 mb-4">
+            Loading...
+          </h1>
+          <p className="text-gray-600">
+            Please wait while we check your authentication status.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
+  // Show redirect message only after auth state is confirmed
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="text-center">
