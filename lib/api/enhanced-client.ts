@@ -73,13 +73,11 @@ class EnhancedApiClient {
         };
         
         this.handleError(error, showErrorToUser);
-        return; // This will never be reached due to handleError throwing
       }
       
       return await response.json();
     } catch (error) {
       this.handleError(error, showErrorToUser);
-      return; // This will never be reached due to handleError throwing
     }
   }
   

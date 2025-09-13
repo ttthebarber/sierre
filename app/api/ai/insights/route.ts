@@ -33,6 +33,35 @@ interface AIInsight {
   actions?: string[];
 }
 
+export async function GET() {
+  const { userId } = await auth();
+  
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    
+    // Get user's stores
+    const { data: stores } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (!stores || stores.length === 0) {
+      return NextResponse.json({ insights: [] });
+    }
+
+    // For now, return empty insights since no real data is available
+    // In a real implementation, you would fetch and return actual insights
+    return NextResponse.json({ insights: [] });
+  } catch (error) {
+    console.error('AI Insights GET error:', error);
+    return NextResponse.json({ error: 'Failed to fetch insights' }, { status: 500 });
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { userId } = await auth();
   

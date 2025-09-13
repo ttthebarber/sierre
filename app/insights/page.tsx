@@ -5,16 +5,13 @@ import { AppLayout } from "@/components/layout/app-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InsightsPanel } from "@/components/ai/insights-panel";
 import { 
   Brain, 
-  Settings, 
   BarChart3, 
   TrendingUp,
   CheckCircle,
   Lightbulb,
-  RefreshCw,
   Download,
   Filter
 } from "lucide-react";
@@ -44,10 +41,6 @@ export default function AIInsightsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
-  const [dataSources, setDataSources] = useState<{[key: string]: boolean}>({});
-  const [insightCategories, setInsightCategories] = useState<{[key: string]: boolean}>({});
-  const [notificationPrefs, setNotificationPrefs] = useState<{[key: string]: boolean}>({});
-  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     // Fetch insight statistics and app data
@@ -56,10 +49,7 @@ export default function AIInsightsPage() {
       try {
         // Fetch insights
         try {
-          const data = await apiClient.post('/ai/insights', {
-            storeId: 'default',
-            timeRange,
-          }, false) as { insights?: any[] }; // Disable error display for this call
+          const data = await apiClient.get('/ai/insights', false) as { insights?: any[] }; // Disable error display for this call
           
           const insights = data.insights || [];
           
@@ -87,34 +77,6 @@ export default function AIInsightsPage() {
         }
 
         // Fetch data source connections
-        try {
-          const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean }; // Disable error display
-          setDataSources({
-            'Shopify Analytics': shopifyData.connected,
-            'Google Analytics': false, // Not implemented yet
-          });
-        } catch (error) {
-          // Silently handle errors for data sources
-          setDataSources({
-            'Shopify Analytics': false,
-            'Google Analytics': false,
-          });
-        }
-
-        // Set default insight categories (all enabled by default)
-        setInsightCategories({
-          'Revenue': true,
-          'Operations': true,
-          'Marketing': true,
-          'Inventory': true,
-          'Customer': true,
-        });
-
-        // Set default notification preferences
-        setNotificationPrefs({
-          'High Impact Insights': true,
-          'Weekly Summary': true,
-        });
 
       } catch (error) {
         console.error('Failed to fetch data:', error);
@@ -127,21 +89,6 @@ export default function AIInsightsPage() {
           highImpact: 0,
           actionable: 0,
         });
-        setDataSources({
-          'Shopify Analytics': false,
-          'Google Analytics': false,
-        });
-        setInsightCategories({
-          'Revenue': true,
-          'Operations': true,
-          'Marketing': true,
-          'Inventory': true,
-          'Customer': true,
-        });
-        setNotificationPrefs({
-          'High Impact Insights': true,
-          'Weekly Summary': true,
-        });
       } finally {
         setLoading(false);
       }
@@ -150,24 +97,6 @@ export default function AIInsightsPage() {
     fetchData();
   }, [timeRange]);
 
-  const handleRegenerateInsights = async () => {
-    setRegenerating(true);
-    try {
-      // Trigger insight regeneration
-      await apiClient.post('/ai/insights', {
-        storeId: 'default',
-        timeRange,
-        regenerate: true,
-      }, true); // Enable error display for user-initiated actions
-
-      // Refresh the page data
-      window.location.reload();
-    } catch (error) {
-      // Error is already handled by the API client
-    } finally {
-      setRegenerating(false);
-    }
-  };
 
   const statCards = [
     {
@@ -225,19 +154,23 @@ export default function AIInsightsPage() {
         {/* Time Range Selector */}
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium text-gray-700">Time Range:</span>
-          <Tabs value={timeRange} onValueChange={(value) => setTimeRange(value as any)}>
-            <TabsList className="bg-white border border-gray-200">
-              <TabsTrigger value="7d" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-                7 days
-              </TabsTrigger>
-              <TabsTrigger value="30d" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-                30 days
-              </TabsTrigger>
-              <TabsTrigger value="90d" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-                90 days
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex bg-white border border-gray-200 rounded-lg p-1">
+            {(['7d', '30d', '90d'] as const).map((range) => (
+              <Button
+                key={range}
+                variant="ghost"
+                size="sm"
+                className={`text-xs px-3 py-1 ${
+                  timeRange === range 
+                    ? 'bg-gray-100 text-gray-900' 
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                onClick={() => setTimeRange(range)}
+              >
+                {range === '7d' ? '7 days' : range === '30d' ? '30 days' : '90 days'}
+              </Button>
+            ))}
+          </div>
         </div>
 
         {/* Stats Cards */}
@@ -264,125 +197,32 @@ export default function AIInsightsPage() {
           })}
         </div>
 
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="insights" className="space-y-6">
-          <TabsList className="bg-white border border-gray-200">
-            <TabsTrigger value="insights" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-              <Brain className="h-4 w-4 mr-2" />
-              Insights
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-gray-100 data-[state=active]:text-gray-900">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="insights" className="space-y-6">
-            <InsightsPanel timeRange={timeRange} />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-black">Insight Analytics</CardTitle>
-                <CardDescription>
-                  Track the performance and impact of AI insights over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    Analytics Coming Soon
-                  </h3>
-                  <p className="text-gray-600">
-                    Track insight performance, implementation rates, and ROI metrics
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="border-gray-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-black">AI Insights Settings</CardTitle>
-                <CardDescription>
-                  Configure how AI insights are generated and displayed
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Insight Categories</h4>
-                    <div className="space-y-2">
-                      {Object.entries(insightCategories).map(([category, enabled]) => (
-                        <div key={category} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">{category}</span>
-                          <Badge 
-                            variant={enabled ? "outline" : "secondary"} 
-                            className={`text-xs ${enabled ? 'text-green-600 border-green-200' : 'text-gray-500'}`}
-                          >
-                            {enabled ? 'Enabled' : 'Disabled'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Notification Preferences</h4>
-                    <div className="space-y-2">
-                      {Object.entries(notificationPrefs).map(([pref, enabled]) => (
-                        <div key={pref} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">{pref}</span>
-                          <Badge 
-                            variant={enabled ? "outline" : "secondary"} 
-                            className={`text-xs ${enabled ? 'text-green-600 border-green-200' : 'text-gray-500'}`}
-                          >
-                            {enabled ? 'Enabled' : 'Disabled'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Data Sources</h4>
-                    <div className="space-y-2">
-                      {Object.entries(dataSources).map(([source, connected]) => (
-                        <div key={source} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-700">{source}</span>
-                          <Badge 
-                            variant={connected ? "outline" : "secondary"} 
-                            className={`text-xs ${connected ? 'text-green-600 border-green-200' : 'text-gray-500'}`}
-                          >
-                            {connected ? 'Connected' : 'Not Connected'}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-gray-200">
-                  <Button 
-                    className="bg-black hover:bg-gray-800 text-white"
-                    onClick={handleRegenerateInsights}
-                    disabled={regenerating}
-                  >
-                    <RefreshCw className={`h-4 w-4 mr-2 ${regenerating ? 'animate-spin' : ''}`} />
-                    {regenerating ? 'Regenerating...' : 'Regenerate Insights'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {/* Main Content */}
+        <div className="space-y-6">
+          {/* Insights Panel */}
+          <InsightsPanel timeRange={timeRange} />
+          
+          {/* Analytics Section */}
+          <Card className="border-gray-200 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-black">Insight Analytics</CardTitle>
+              <CardDescription>
+                Track the performance and impact of AI insights over time
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-center py-12">
+                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Analytics Coming Soon
+                </h3>
+                <p className="text-gray-600">
+                  Track insight performance, implementation rates, and ROI metrics
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         </div>
       </FadeIn>
     </AppLayout>

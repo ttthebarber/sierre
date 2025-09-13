@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { shopifyApi } from "@/lib/api/integrations/shopify";
 import { CheckCircle, AlertCircle, Clock, RefreshCw, Trash2 } from "lucide-react";
 import { FadeIn } from "@/components/ui/fade-in";
+import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 
 interface ShopifyStatus {
   connected: boolean;
@@ -17,9 +18,22 @@ interface ShopifyStatus {
   last_inventory_sync_at: string | null;
 }
 
+interface AIInsightsStatus {
+  isActive: boolean;
+  totalInsights: number;
+  highImpactInsights: number;
+  dataSources?: {[key: string]: boolean};
+}
+
 
 export default function SettingsPage() {
+  const apiClient = useApiClientSafe();
   const [shopifyStatus, setShopifyStatus] = useState<ShopifyStatus | null>(null);
+  const [aiInsightsStatus, setAiInsightsStatus] = useState<AIInsightsStatus>({
+    isActive: false,
+    totalInsights: 0,
+    highImpactInsights: 0,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [shop] = useState("demo-store");
 
@@ -35,6 +49,36 @@ export default function SettingsPage() {
           last_products_sync_at: null,
           last_inventory_sync_at: null,
         });
+
+        // Fetch AI insights status
+        try {
+          const insightsData = await apiClient.get('/ai/insights', false) as { insights?: any[] };
+          const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean };
+          
+          const insights = insightsData.insights || [];
+          const highImpactInsights = insights.filter((insight: any) => insight.impact === 'high').length;
+          
+          setAiInsightsStatus({
+            isActive: shopifyData.connected,
+            totalInsights: insights.length,
+            highImpactInsights,
+            dataSources: {
+              'Shopify Analytics': shopifyData.connected,
+              'Google Analytics': false, // Not implemented yet
+            }
+          });
+        } catch (error) {
+          // Silently handle AI insights errors
+          setAiInsightsStatus({
+            isActive: false,
+            totalInsights: 0,
+            highImpactInsights: 0,
+            dataSources: {
+              'Shopify Analytics': false,
+              'Google Analytics': false,
+            }
+          });
+        }
       } catch (error) {
         console.error("Failed to load integration status:", error);
       } finally {
@@ -42,7 +86,7 @@ export default function SettingsPage() {
       }
     };
     loadStatus();
-  }, [shop]);
+  }, [shop, apiClient]);
 
   const handleSync = async () => {
     try {
@@ -164,16 +208,26 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">AI Analysis</p>
-                <p className="text-sm text-gray-600">Enabled - Analyzing your store data</p>
+                <p className="text-sm text-gray-600">
+                  {aiInsightsStatus.isActive 
+                    ? "Enabled - Analyzing your store data" 
+                    : "No data available - Connect a store to enable insights"
+                  }
+                </p>
               </div>
-              <Badge variant="outline" className="text-green-600 border-green-200">
-                Active
+              <Badge variant="outline" className={aiInsightsStatus.isActive ? "text-green-600 border-green-200" : "text-gray-500 border-gray-300"}>
+                {aiInsightsStatus.isActive ? "Active" : "Inactive"}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">Insights Generated</p>
-                <p className="text-sm text-gray-600">12 actionable insights this month</p>
+                <p className="text-sm text-gray-600">
+                  {aiInsightsStatus.totalInsights > 0 
+                    ? `${aiInsightsStatus.totalInsights} insights available` 
+                    : "No insights generated yet"
+                  }
+                </p>
               </div>
               <Button asChild variant="outline" size="sm">
                 <a href="/insights">View All</a>
@@ -182,9 +236,32 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">High Impact Opportunities</p>
-                <p className="text-sm text-gray-600">4 recommendations ready to implement</p>
+                <p className="text-sm text-gray-600">
+                  {aiInsightsStatus.highImpactInsights > 0 
+                    ? `${aiInsightsStatus.highImpactInsights} recommendations ready to implement` 
+                    : "No high-impact opportunities identified"
+                  }
+                </p>
               </div>
             </div>
+            {aiInsightsStatus.dataSources && (
+              <div>
+                <p className="font-medium text-gray-900 mb-2">Data Sources</p>
+                <div className="space-y-1">
+                  {Object.entries(aiInsightsStatus.dataSources).map(([source, connected]) => (
+                    <div key={source} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-600">{source}</span>
+                      <Badge 
+                        variant={connected ? "outline" : "secondary"} 
+                        className={`text-xs ${connected ? 'text-green-600 border-green-200' : 'text-gray-500'}`}
+                      >
+                        {connected ? 'Connected' : 'Not Connected'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
