@@ -15,9 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  AreaChart,
+  Area,
   LineChart,
   Line,
   CartesianGrid,
@@ -26,20 +26,23 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   ChevronDown,
-  Plus,
   TrendingUp,
-  TrendingDown,
-  Lightbulb,
   Store,
-  Share2,
-  Download,
   CheckCircle,
   XCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+  ChevronUp,
+  MoreVertical,
+  GripVertical,
+  Lightbulb,
 } from "lucide-react";
-import { InsightsPanel } from "@/components/ai/insights-panel";
 import { FadeIn } from "@/components/ui/fade-in";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ProductAnalyticsTable } from "@/components/dashboard/product-analytics-table";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 import { useSearchParams } from "next/navigation";
 
@@ -99,7 +102,7 @@ function StoreSwitcher({
           <DropdownMenuSeparator className="bg-gray-200" />
           <div className="px-2 py-1.5">
             <Button onClick={onAdd} className="w-full bg-black hover:bg-gray-900 text-white">
-              <Plus className="h-4 w-4 mr-2" /> Add store
+              Add store
             </Button>
           </div>
         </DropdownMenuContent>
@@ -108,180 +111,130 @@ function StoreSwitcher({
   );
 }
 
-// ---- Portfolio Health ----
-function PortfolioHealth({
+// ---- KPI Cards ----
+function KPICards({
   stores,
   totals,
-  bestStoreId,
-  attentionStoreId,
-  healthScore,
 }: {
   stores: Array<{ id: string; name: string; platform: keyof typeof PLATFORM_META; health: "good" | "warn" | "bad" }>;
   totals: { revenue: number; orders: number; aov: number };
-  bestStoreId: string | null;
-  attentionStoreId: string | null;
-  healthScore: number;
 }) {
-  const bestStore = stores.find((s) => s.id === bestStoreId);
-  const attentionStore = stores.find((s) => s.id === attentionStoreId);
-
-  const healthBadge = (score: number) => {
-    let tone = "bg-yellow-200 text-black";
-    if (score >= 75) tone = "bg-green-200 text-black";
-    if (score < 40) tone = "bg-red-200 text-black";
-    return <span className={`px-2 py-0.5 rounded text-xs font-medium ${tone}`}>{score}</span>;
-  };
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardDescription className="text-gray-600">Portfolio Health</CardDescription>
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-2xl text-black">Score</CardTitle>
-            {healthBadge(healthScore)}
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <p className="text-sm text-gray-600">0–100 based on growth, consistency, and efficiency.</p>
-        </CardContent>
-      </Card>
-
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardDescription className="text-gray-600">Total revenue</CardDescription>
-          <CardTitle className="text-2xl text-black">{fmtCurrency(totals.revenue)}</CardTitle>
-        </CardHeader>
-      </Card>
-
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardDescription className="text-gray-600">Best performing store</CardDescription>
-          <CardTitle className="text-lg text-black truncate">
-            {bestStore ? (
-              <span className="inline-flex items-center gap-2">
-                <span className={`h-2 w-2 rounded-full ${PLATFORM_META[bestStore.platform].tint}`}></span>
-                {bestStore.name}
-              </span>
-            ) : (
-              "—"
-            )}
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader className="pb-2">
-          <CardDescription className="text-gray-600">Needs attention</CardDescription>
-          <CardTitle className="text-lg text-black truncate">
-            {attentionStore ? (
-              <span className="inline-flex items-center gap-2 text-yellow-700">
-                <Lightbulb className="h-4 w-4" /> {attentionStore.name}
-              </span>
-            ) : (
-              "—"
-            )}
-          </CardTitle>
-        </CardHeader>
-      </Card>
-    </div>
-  );
-}
-
-// ---- Cross‑Store Insights ----
-function CrossStoreInsights({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
-  // Show empty state when no stores are connected
-  const items = stores.length === 0 ? [
-    { text: "Connect your first store to see personalized insights and recommendations", trend: "neutral" as const },
-    { text: "AI-powered analytics will help optimize your store performance", trend: "neutral" as const },
-    { text: "Get real-time recommendations based on your store data", trend: "neutral" as const },
+  // Mock data for connected Shopify store
+  const mockKpiData = stores.length > 0 ? [
+    {
+      title: "TOTAL REVENUE",
+      value: "$24,750.00",
+      change: "+18.3%",
+      changeType: "positive" as const,
+      status: "Strong month-over-month growth",
+      subtext: "Revenue up from last month",
+    },
+    {
+      title: "ORDERS",
+      value: "1,247",
+      change: "+12.1%",
+      changeType: "positive" as const,
+      status: "Order volume increasing steadily",
+      subtext: "Higher conversion rates",
+    },
+    {
+      title: "AVERAGE ORDER VALUE",
+      value: "$89.50",
+      change: "+5.7%",
+      changeType: "positive" as const,
+      status: "Customers spending more per order",
+      subtext: "Upselling strategies working",
+    },
+    {
+      title: "CONVERSION RATE",
+      value: "3.2%",
+      change: "+0.8%",
+      changeType: "positive" as const,
+      status: "Above industry average",
+      subtext: "Optimized checkout flow",
+    },
   ] : [
-    { text: "Your Shopify store is performing well with consistent growth", trend: "up" as const },
-    { text: "Mobile traffic has increased 25% this month", trend: "up" as const },
-    { text: "Consider optimizing checkout flow to reduce cart abandonment", trend: "neutral" as const },
-    { text: "Your conversion rate is 15% above average for your category", trend: "up" as const },
+    {
+      title: "TOTAL REVENUE",
+      value: "$0.00",
+      change: "0%",
+      changeType: "positive" as const,
+      status: "Connect your Shopify store to see revenue data",
+      subtext: "No data available",
+    },
+    {
+      title: "ORDERS",
+      value: "0",
+      change: "0%",
+      changeType: "positive" as const,
+      status: "Connect your Shopify store to see order data",
+      subtext: "No data available",
+    },
+    {
+      title: "AVERAGE ORDER VALUE",
+      value: "$0.00",
+      change: "0%",
+      changeType: "positive" as const,
+      status: "Connect your Shopify store to see AOV data",
+      subtext: "No data available",
+    },
+    {
+      title: "CONVERSION RATE",
+      value: "0%",
+      change: "0%",
+      changeType: "positive" as const,
+      status: "Connect your Shopify store to see conversion data",
+      subtext: "No data available",
+    },
   ];
 
-  const TrendIcon = ({ t }: { t: "up" | "down" | "neutral" }) =>
-    t === "up" ? <TrendingUp className="h-4 w-4" /> : t === "down" ? <TrendingDown className="h-4 w-4" /> : <Lightbulb className="h-4 w-4" />;
+  const kpiData = mockKpiData;
 
   return (
-    <Card className="bg-white border border-gray-200 shadow-sm mb-6">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 flex items-center justify-center text-blue-500">
-              <span><Lightbulb className="h-6 w-6" /></span>
-            </div>
-            <CardTitle className="text-black">Store Insights</CardTitle>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {kpiData.map((kpi, index) => (
+        <Card key={index} className="bg-white border border-gray-200 shadow-sm rounded-2xl">
+          <CardContent className="p-6">
+            <div className="relative">
+              {/* Title */}
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+                {kpi.title}
+              </p>
+              
+              {/* Value */}
+              <p className="text-3xl font-bold text-gray-900 mb-3">
+                {kpi.value}
+              </p>
+              
+              {/* Percentage Badge */}
+              <div className="absolute top-0 right-0">
+                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                  kpi.changeType === "positive" 
+                    ? "bg-green-100 text-green-600" 
+                    : "bg-red-100 text-red-600"
+                }`}>
+                  {kpi.changeType === "positive" ? (
+                    <ArrowUpRight className="h-3 w-3" />
+                  ) : (
+                    <ArrowDownRight className="h-3 w-3" />
+                  )}
+                  {kpi.change}
           </div>
         </div>
-        <CardDescription className="text-gray-600">
-          {stores.length === 0 
-            ? "Connect your store to get intelligent insights and recommendations."
-            : "Intelligent insights and recommendations for your Shopify store."
-          }
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <ul className="space-y-2">
-          {items.map((it, i) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="mt-0.5 text-yellow-500"><TrendIcon t={it.trend} /></span>
-              <span className="text-gray-900">{it.text}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </Card>
-  );
-}
-
-// ---- Store Performance Grid ----
-function StorePerformanceGrid({
-  stores,
-  onOpen,
-}: {
-  stores: Array<{
-    id: string;
-    name: string;
-    platform: keyof typeof PLATFORM_META;
-    metrics: { revenue: number; orders: number; aov: number; health: "good" | "warn" | "bad" };
-  }>;
-  onOpen: (id: string) => void;
-}) {
-  const healthTone = (h: "good" | "warn" | "bad") =>
-    h === "good" ? "bg-green-100 text-green-800" : h === "warn" ? "bg-yellow-100 text-yellow-900" : "bg-red-100 text-red-800";
-
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
-      {stores.map((s) => (
-        <Card key={s.id} className="bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => onOpen(s.id)}>
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className={`h-2 w-2 rounded-full ${PLATFORM_META[s.platform].tint}`}></span>
-                <CardTitle className="text-base text-black truncate">{s.name}</CardTitle>
-              </div>
-              <Badge className={`capitalize ${healthTone(s.metrics.health)}`} variant="secondary">
-                {s.metrics.health}
-              </Badge>
-            </div>
-            <CardDescription className="text-gray-600">{PLATFORM_META[s.platform].label}</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-3 gap-3 text-sm">
-              <div>
-                <div className="text-gray-600">Revenue</div>
-                <div className="text-black font-medium">{fmtCurrency(s.metrics.revenue)}</div>
-              </div>
-              <div>
-                <div className="text-gray-600">Orders</div>
-                <div className="text-black font-medium">{fmtNumber(s.metrics.orders)}</div>
-              </div>
-              <div>
-                <div className="text-gray-600">AOV</div>
-                <div className="text-black font-medium">{fmtCurrency(s.metrics.aov)}</div>
+              
+              {/* Status Message */}
+              <p className="text-sm text-gray-500 mb-2">
+                {kpi.status}
+              </p>
+              
+              {/* Subtext with Arrow */}
+              <div className="flex items-center gap-1 text-xs text-gray-400">
+                <span>{kpi.subtext}</span>
+                {kpi.changeType === "positive" ? (
+                  <ArrowUpRight className="h-3 w-3" />
+                ) : (
+                  <ArrowDownRight className="h-3 w-3" />
+                )}
               </div>
             </div>
           </CardContent>
@@ -291,156 +244,252 @@ function StorePerformanceGrid({
   );
 }
 
-// ---- Multi‑Store Charts ----
-function MultiStoreCharts({
-  stores,
-  activeStoreIds,
-  onToggleStore,
-}: {
-  stores: Array<{
-    id: string;
-    name: string;
-    platform: keyof typeof PLATFORM_META;
-    series: Array<{ date: string; revenue: number; orders: number; aov: number }>;
-    summary: { revenue: number; orders: number; aov: number };
-  }>;
-  activeStoreIds: string[];
-  onToggleStore: (id: string) => void;
-}) {
-  const [period, setPeriod] = React.useState<"7d" | "30d" | "90d" | "1y">("30d");
-  const [metric, setMetric] = React.useState<"revenue" | "orders" | "aov">("revenue");
 
-  // Build unified x-axis by date
-  const allDates = Array.from(
-    new Set(stores.flatMap((s) => s.series.map((d) => d.date)))
-  ).sort();
+// ---- Total Visitors Chart ----
+function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
+  const [timeRange, setTimeRange] = React.useState<"3months" | "30days" | "7days">("3months");
+  const [metricType, setMetricType] = React.useState<"visitors" | "sessions" | "page_views" | "orders" | "revenue" | "conversion_rate">("visitors");
+  
+  // Mock analytics data for different time ranges - realistic Shopify store data
+  const analyticsData = {
+    "3months": [
+      { 
+        date: "Oct", 
+        visitors: 2840, 
+        sessions: 3200, 
+        page_views: 12800, 
+        orders: 95, 
+        revenue: 18500, 
+        conversion_rate: 2.97 
+      },
+      { 
+        date: "Nov", 
+        visitors: 3150, 
+        sessions: 3550, 
+        page_views: 14200, 
+        orders: 112, 
+        revenue: 22100, 
+        conversion_rate: 3.15 
+      },
+      { 
+        date: "Dec", 
+        visitors: 3890, 
+        sessions: 4380, 
+        page_views: 17520, 
+        orders: 147, 
+        revenue: 28900, 
+        conversion_rate: 3.36 
+      },
+    ],
+    "30days": [
+      { date: "Dec 1", visitors: 1250, sessions: 1400, page_views: 5600, orders: 4, revenue: 680, conversion_rate: 0.29 },
+      { date: "Dec 4", visitors: 1420, sessions: 1600, page_views: 6400, orders: 5, revenue: 850, conversion_rate: 0.31 },
+      { date: "Dec 7", visitors: 1180, sessions: 1320, page_views: 5280, orders: 3, revenue: 520, conversion_rate: 0.23 },
+      { date: "Dec 10", visitors: 1680, sessions: 1890, page_views: 7560, orders: 7, revenue: 1190, conversion_rate: 0.37 },
+      { date: "Dec 13", visitors: 1920, sessions: 2160, page_views: 8640, orders: 9, revenue: 1530, conversion_rate: 0.42 },
+      { date: "Dec 16", visitors: 1450, sessions: 1630, page_views: 6520, orders: 5, revenue: 850, conversion_rate: 0.31 },
+      { date: "Dec 19", visitors: 2100, sessions: 2360, page_views: 9440, orders: 11, revenue: 1870, conversion_rate: 0.47 },
+      { date: "Dec 22", visitors: 2850, sessions: 3200, page_views: 12800, orders: 15, revenue: 2550, conversion_rate: 0.47 },
+      { date: "Dec 25", visitors: 3200, sessions: 3600, page_views: 14400, orders: 18, revenue: 3060, conversion_rate: 0.50 },
+      { date: "Dec 28", visitors: 3890, sessions: 4380, page_views: 17520, orders: 22, revenue: 3740, conversion_rate: 0.50 },
+    ],
+    "7days": [
+      { date: "Mon", visitors: 1420, sessions: 1600, page_views: 6400, orders: 6, revenue: 1020, conversion_rate: 0.38 },
+      { date: "Tue", visitors: 1680, sessions: 1890, page_views: 7560, orders: 8, revenue: 1360, conversion_rate: 0.42 },
+      { date: "Wed", visitors: 1350, sessions: 1520, page_views: 6080, orders: 5, revenue: 850, conversion_rate: 0.33 },
+      { date: "Thu", visitors: 1920, sessions: 2160, page_views: 8640, orders: 10, revenue: 1700, conversion_rate: 0.46 },
+      { date: "Fri", visitors: 2100, sessions: 2360, page_views: 9440, orders: 12, revenue: 2040, conversion_rate: 0.51 },
+      { date: "Sat", visitors: 2850, sessions: 3200, page_views: 12800, orders: 16, revenue: 2720, conversion_rate: 0.50 },
+      { date: "Sun", visitors: 3200, sessions: 3600, page_views: 14400, orders: 18, revenue: 3060, conversion_rate: 0.50 },
+    ],
+  };
 
-  const merged = allDates.map((date) => {
-    const row: any = { date };
-    stores.forEach((s) => {
-      const found = s.series.find((d) => d.date === date);
-      row[s.id] = found ? found[metric] : 0;
-    });
-    return row;
-  });
+  // Empty data for when no store is connected
+  const emptyAnalyticsData = {
+    "3months": [
+      { date: "Oct", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Nov", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Dec", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+    ],
+    "30days": [
+      { date: "Day 1", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 5", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 10", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 15", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 20", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 25", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Day 30", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+    ],
+    "7days": [
+      { date: "Mon", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Tue", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Wed", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Thu", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Fri", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Sat", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+      { date: "Sun", visitors: 0, sessions: 0, page_views: 0, orders: 0, revenue: 0, conversion_rate: 0 },
+    ],
+  };
 
-  const colors = ["#111827", "#F59E0B", "#9CA3AF", "#000000"]; // black/yellow/gray tones
+  // Shopify analytics metrics available through read_analytics scope
+  const metricOptions = [
+    { value: "visitors", label: "Visitors", format: "number" },
+    { value: "sessions", label: "Sessions", format: "number" },
+    { value: "page_views", label: "Page Views", format: "number" },
+    { value: "orders", label: "Orders", format: "number" },
+    { value: "revenue", label: "Revenue", format: "currency" },
+    { value: "conversion_rate", label: "Conversion Rate", format: "percentage" },
+  ];
 
-  const exportCsv = () => {
-    const headers = ["date", ...stores.map((s) => s.name)].join(",");
-    const lines = merged.map((r) => [r.date, ...stores.map((s) => r[s.id])].join(","));
-    const csv = [headers, ...lines].join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `multi-store-${metric}-${period}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const timeRangeOptions = [
+    { value: "3months", label: "Last 3 months" },
+    { value: "30days", label: "Last 30 days" },
+    { value: "7days", label: "Last 7 days" },
+  ];
+
+  const currentData = stores.length > 0 ? analyticsData[timeRange] : emptyAnalyticsData[timeRange];
+  
+  const selectedMetric = metricOptions.find(opt => opt.value === metricType);
+  
+  const chartConfig = {
+    [metricType]: {
+      label: selectedMetric?.label || "Metric",
+      color: "#111827",
+    },
+  };
+
+  // Format tooltip values based on metric type
+  const formatTooltipValue = (value: any) => {
+    if (selectedMetric?.format === "currency") {
+      return fmtCurrency(value);
+    } else if (selectedMetric?.format === "percentage") {
+      return `${value}%`;
+    } else {
+      return value?.toLocaleString();
+    }
   };
 
   return (
-    <div className="space-y-4">
-      {/* Controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Tabs value={period} onValueChange={(v) => setPeriod(v as any)}>
-            <TabsList className="bg-white border border-gray-200">
-              {[
-                { v: "7d", l: "7d" },
-                { v: "30d", l: "30d" },
-                { v: "90d", l: "90d" },
-                { v: "1y", l: "1y" },
-              ].map((t) => (
-                <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-gray-200 data-[state=active]:text-black">
-                  {t.l}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
+    <Card className="bg-white border border-gray-200 shadow-sm rounded-2xl">
+      <CardHeader className="pb-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              {selectedMetric?.label || "Analytics"}
+            </CardTitle>
+            <CardDescription className="text-gray-500 text-sm">
+              {timeRange === "3months" && `Monthly ${selectedMetric?.label.toLowerCase()} for the last 3 months`}
+              {timeRange === "30days" && `Daily ${selectedMetric?.label.toLowerCase()} for the last 30 days`}
+              {timeRange === "7days" && `Daily ${selectedMetric?.label.toLowerCase()} for the last 7 days`}
+            </CardDescription>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Metric Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-200 text-black">
-                Metric: {metric}
+                <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-200 text-black">
+                  {selectedMetric?.label}
                 <ChevronDown className="h-4 w-4 ml-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-44 bg-white border-gray-200">
-              <DropdownMenuLabel className="text-black">Select metric</DropdownMenuLabel>
+              <DropdownMenuContent className="w-48 bg-white border-gray-200">
+                <DropdownMenuLabel className="text-black">Analytics Metric</DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-gray-200" />
-              <DropdownMenuRadioGroup value={metric} onValueChange={(v) => setMetric(v as any)}>
-                {["revenue", "orders", "aov"].map((m) => (
-                  <DropdownMenuRadioItem key={m} value={m} className="text-black hover:bg-gray-200 capitalize">
-                    {m}
+                <DropdownMenuRadioGroup value={metricType} onValueChange={(v) => setMetricType(v as any)}>
+                  {metricOptions.map((option) => (
+                    <DropdownMenuRadioItem key={option.value} value={option.value} className="text-black hover:bg-gray-200">
+                      {option.label}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="border-gray-200 bg-white text-black hover:bg-gray-200" onClick={exportCsv}>
-            <Download className="h-4 w-4 mr-2" /> Export
-          </Button>
-          <Button className="bg-black hover:bg-gray-900 text-white">
-            <Share2 className="h-4 w-4 mr-2" /> Share
-          </Button>
+            
+            {/* Time Range Toggle Buttons */}
+            <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+              {timeRangeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setTimeRange(option.value as any)}
+                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                    timeRange === option.value
+                      ? "bg-white text-gray-900 shadow-sm font-semibold"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
         </div>
       </div>
-
-      {/* Toggle chips */}
-      <div className="flex flex-wrap items-center gap-3">
-        {stores.map((s, i) => (
-          <label key={s.id} className="inline-flex items-center gap-2 text-sm select-none">
-            <Checkbox checked={activeStoreIds.includes(s.id)} onCheckedChange={() => onToggleStore(s.id)} />
-            <span className="inline-flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ background: colors[i % colors.length] }} />
-              <span className="text-gray-900">{s.name}</span>
-              <Badge variant="outline" className="text-xs border-gray-300 text-gray-700">
-                {PLATFORM_META[s.platform].label}
-              </Badge>
-            </span>
-          </label>
-        ))}
       </div>
-
-      {/* Revenue/Metric Trend (lines) */}
-      <Card className="bg-white border border-gray-200 shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-black">Multi‑Store {metric === "aov" ? "AOV" : metric.charAt(0).toUpperCase() + metric.slice(1)} Trend</CardTitle>
-          <CardDescription className="text-gray-600">Toggle stores to focus the chart.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={merged} margin={{ left: 12, right: 12, top: 10 }}>
+      <CardContent className="p-6">
+        <div className="h-80">
+          {stores.length === 0 ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center">
+                <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500">Connect your store to see analytics data</p>
+              </div>
+            </div>
+          ) : (
+            <ChartContainer config={chartConfig} className="h-full">
+              <AreaChart data={currentData} margin={{ left: 12, right: 12, top: 10 }}>
                 <CartesianGrid vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tick={{ fill: "#374151" }} />
-                <YAxis tick={{ fill: "#374151" }} />
-                <Tooltip contentStyle={{ borderRadius: 8 }} />
-                {stores.map((s, i) =>
-                  activeStoreIds.includes(s.id) ? (
-                    <Line key={s.id} type="monotone" dataKey={s.id} stroke={colors[i % colors.length]} strokeWidth={2} dot={false} />
-                  ) : null
-                )}
-              </LineChart>
-            </ResponsiveContainer>
+                <XAxis 
+                  dataKey="date" 
+                  tickLine={false} 
+                  axisLine={false} 
+                  tickMargin={8} 
+                  tick={{ fill: "#374151", fontSize: 12 }} 
+                />
+                <YAxis 
+                  tick={{ fill: "#374151", fontSize: 12 }} 
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <ChartTooltip 
+                  content={<ChartTooltipContent />}
+                  formatter={(value: any, name: string) => [
+                    formatTooltipValue(value),
+                    selectedMetric?.label || "Metric"
+                  ]}
+                />
+                <defs>
+                  <linearGradient id={`fill${metricType}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#111827" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#111827" stopOpacity={0.05}/>
+                  </linearGradient>
+                </defs>
+                <Area 
+                  type="monotone" 
+                  dataKey={metricType} 
+                  stroke="#111827" 
+                  strokeWidth={2}
+                  fill={`url(#fill${metricType})`}
+                  fillOpacity={1}
+                />
+              </AreaChart>
+            </ChartContainer>
+          )}
           </div>
         </CardContent>
       </Card>
-    </div>
   );
 }
+
+
+
 
 // ---- Main Dashboard Page ----
 const Dashboard = () => {
   return (
     <AuthGuard>
-      <AppLayout title="Dashboard">
-        <UnifiedKpiDashboard />
-      </AppLayout>
+    <AppLayout title="Dashboard">
+          <UnifiedKpiDashboard />
+    </AppLayout>
     </AuthGuard>
   );
 };
@@ -452,7 +501,6 @@ function UnifiedKpiDashboard() {
   const [stores, setStores] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [selected, setSelected] = React.useState<string>("all");
-  const [active, setActive] = React.useState<string[]>([]);
   const [connectionStatus, setConnectionStatus] = React.useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
 
   // Handle query parameters for connection status
@@ -559,32 +607,6 @@ function UnifiedKpiDashboard() {
       )
     : { revenue: 0, orders: 0, aov: 0 };
 
-  const healthScore = activeStores.length
-    ? Math.max(
-        10,
-        Math.min(
-          95,
-          Math.round(
-            (activeStores.reduce(
-              (acc, s) => acc + (s.metrics.health === "good" ? 85 : s.metrics.health === "warn" ? 60 : 35),
-              0
-            ) / activeStores.length) * 1
-          )
-        )
-      )
-    : 0;
-
-  const bestStoreId = activeStores.length
-    ? stores.slice().sort((a, b) => b.summary.revenue - a.summary.revenue)[0]?.id ?? null
-    : null;
-
-  const attentionStoreId = activeStores.length
-    ? stores.find((s) => s.metrics.health !== "good")?.id ?? null
-    : null;
-
-  const toggleStore = (id: string) =>
-    setActive((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-
   const handleAddStore = () => {
     window.location.href = "/integrations";
   };
@@ -612,7 +634,7 @@ function UnifiedKpiDashboard() {
 
   return (
     <FadeIn>
-      <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
         {/* Connection Status Notification */}
         {connectionStatus.type && (
           <div className={`mb-4 p-4 rounded-lg border ${
@@ -634,46 +656,32 @@ function UnifiedKpiDashboard() {
           </div>
         )}
 
-        {/* Header Row */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <StoreSwitcher
-              stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
-              value={selected}
-              onChange={setSelected}
-              onAdd={handleAddStore}
-            />
-          </div>
+      {/* Header Row */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <StoreSwitcher
+            stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
+            value={selected}
+            onChange={setSelected}
+            onAdd={handleAddStore}
+          />
+          
         </div>
-
-        {/* Portfolio Health (always visible, default 0/—) */}
-        <PortfolioHealth
-          stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
-          totals={totals}
-          bestStoreId={bestStoreId}
-          attentionStoreId={attentionStoreId}
-          healthScore={healthScore}
-        />
-
-        {/* Always show the full dashboard with empty states when no stores */}
-        <CrossStoreInsights stores={stores} />
-        
-        {/* AI Insights Panel */}
-        <div className="mb-6">
-          <InsightsPanel storeId={selected === "all" ? undefined : selected} timeRange="30d" />
-        </div>
-        
-        <StorePerformanceGrid
-          stores={stores.map((s) => ({
-            id: s.id,
-            name: s.name,
-            platform: s.platform,
-            metrics: { ...s.metrics },
-          }))}
-          onOpen={(id) => console.log("Open store", id)}
-        />
-        <MultiStoreCharts stores={stores} activeStoreIds={active} onToggleStore={toggleStore} />
       </div>
+
+        {/* KPI Cards */}
+        <KPICards
+        stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
+        totals={totals}
+        />
+
+
+        {/* Total Visitors Chart */}
+        <TotalVisitorsChart stores={stores} />
+
+        {/* Product Analytics Table */}
+        <ProductAnalyticsTable stores={stores} />
+          </div>
     </FadeIn>
   );
 }

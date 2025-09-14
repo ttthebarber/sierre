@@ -171,6 +171,39 @@ create table if not exists public.kpi_daily (
   unique (shop, date)
 );
 
+-- Analytics snapshots for comprehensive Shopify analytics data
+create table if not exists public.analytics_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  shop text not null references public.shopify_stores(shop) on delete cascade,
+  user_id text not null,
+  data jsonb not null, -- Comprehensive analytics data from Shopify
+  captured_at timestamptz not null default now(),
+  unique (shop, user_id, date(captured_at))
+);
+
+-- Index for efficient querying of analytics snapshots
+create index if not exists idx_analytics_snapshots_shop_user on public.analytics_snapshots(shop, user_id);
+create index if not exists idx_analytics_snapshots_captured on public.analytics_snapshots(captured_at desc);
+
+-- Enable RLS on analytics snapshots
+alter table public.analytics_snapshots enable row level security;
+
+-- Policy for analytics snapshots
+create policy select_analytics_snapshots_by_user_shop on public.analytics_snapshots for select using (
+  user_id = auth.uid()::text and
+  exists (select 1 from public.user_shops us where us.shop = analytics_snapshots.shop and us.user_id = auth.uid()::text)
+);
+
+create policy insert_analytics_snapshots_by_user_shop on public.analytics_snapshots for insert with check (
+  user_id = auth.uid()::text and
+  exists (select 1 from public.user_shops us where us.shop = analytics_snapshots.shop and us.user_id = auth.uid()::text)
+);
+
+create policy update_analytics_snapshots_by_user_shop on public.analytics_snapshots for update using (
+  user_id = auth.uid()::text and
+  exists (select 1 from public.user_shops us where us.shop = analytics_snapshots.shop and us.user_id = auth.uid()::text)
+);
+
 -- Fees daily table
 create table if not exists public.fees_daily (
   id uuid primary key default gen_random_uuid(),

@@ -14,108 +14,80 @@ import {
   DollarSign,
   Users,
   Package,
-  ShoppingCart,
   Brain,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus
+  ChevronDown,
+  ChevronUp,
+  Star,
+  Info
 } from 'lucide-react';
-
-interface AIInsight {
-  id: string;
-  type: 'opportunity' | 'warning' | 'success' | 'recommendation';
-  title: string;
-  description: string;
-  impact: 'high' | 'medium' | 'low';
-  confidence: number;
-  actionable: boolean;
-  category: 'revenue' | 'operations' | 'marketing' | 'inventory' | 'customer';
-  metrics?: {
-    current?: number;
-    potential?: number;
-    improvement?: string;
-  };
-  actions?: string[];
-}
+import { aiInsightsService, StoreAnalysis, StoreInsight } from '@/lib/services/ai-insights';
+import { ShopifyAnalyticsData } from '@/lib/types/shopify-analytics';
+import { useApiClientSafe } from '@/lib/hooks/use-api-with-errors';
 
 interface InsightsPanelProps {
   storeId?: string;
   timeRange?: string;
 }
 
-const categoryIcons = {
-  revenue: DollarSign,
-  operations: Target,
-  marketing: Users,
-  inventory: Package,
-  customer: ShoppingCart,
-};
-
-const typeConfig = {
-  opportunity: {
-    icon: TrendingUp,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
-    badgeColor: 'bg-blue-100 text-blue-800',
-  },
-  warning: {
-    icon: AlertTriangle,
-    color: 'text-orange-600',
-    bgColor: 'bg-orange-50',
-    borderColor: 'border-orange-200',
-    badgeColor: 'bg-orange-100 text-orange-800',
-  },
-  success: {
-    icon: CheckCircle,
-    color: 'text-green-600',
-    bgColor: 'bg-green-50',
-    borderColor: 'border-green-200',
-    badgeColor: 'bg-green-100 text-green-800',
-  },
-  recommendation: {
-    icon: Lightbulb,
-    color: 'text-purple-600',
-    bgColor: 'bg-purple-50',
-    borderColor: 'border-purple-200',
-    badgeColor: 'bg-purple-100 text-purple-800',
-  },
-};
-
-const impactConfig = {
-  high: { color: 'text-red-600', label: 'High Impact' },
-  medium: { color: 'text-yellow-600', label: 'Medium Impact' },
-  low: { color: 'text-gray-600', label: 'Low Impact' },
-};
-
 export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps) {
-  const [insights, setInsights] = useState<AIInsight[]>([]);
+  const apiClient = useApiClientSafe();
+  const [insights, setInsights] = useState<StoreInsight[]>([]);
+  const [analysis, setAnalysis] = useState<StoreAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
 
   const fetchInsights = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/ai/insights', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          storeId: storeId || 'default',
-          timeRange,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch insights');
+      // Fetch store data to generate insights
+      const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean, stores?: any[] };
+      
+      if (shopifyData.connected && shopifyData.stores && shopifyData.stores.length > 0) {
+        const store = shopifyData.stores[0];
+        
+        // Create analytics data based on store summary
+        const analyticsData: ShopifyAnalyticsData = {
+          grossRevenue: store.revenue || 0,
+          netRevenue: (store.revenue || 0) * 0.95,
+          revenueChangePercent: store.growth_rate || 0,
+          newCustomers: Math.round((store.orders || 0) * 0.7),
+          newCustomersChangePercent: (store.growth_rate || 0) * 0.8,
+          activeCustomers: Math.round((store.orders || 0) * 0.3),
+          activeCustomersChangePercent: (store.growth_rate || 0) * 0.6,
+          growthRate: store.growth_rate || 0,
+          conversionRate: store.conversion_rate || 0,
+          cartAbandonmentRate: 70, // Industry average
+          trafficSources: {
+            ads: 30,
+            organic: 25,
+            social: 20,
+            referral: 10,
+            direct: 10,
+            email: 5,
+          },
+          totalOrders: store.orders || 0,
+          averageOrderValue: store.aov || 0,
+          totalVisitors: store.orders && store.conversion_rate && store.conversion_rate > 0
+            ? Math.round(store.orders / (store.conversion_rate / 100))
+            : 0,
+          totalSessions: store.orders && store.conversion_rate && store.conversion_rate > 0
+            ? Math.round(store.orders / (store.conversion_rate / 100) * 1.2)
+            : 0,
+        };
+        
+        // Generate AI analysis
+        const storeAnalysis = aiInsightsService.analyzeStore(analyticsData, store.name);
+        setAnalysis(storeAnalysis);
+        setInsights(storeAnalysis.insights);
+      } else {
+        // No store data available - show empty state
+        setAnalysis(null);
+        setInsights([]);
       }
-
-      const data = await response.json();
-      setInsights(data.insights || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -125,19 +97,73 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
 
   useEffect(() => {
     fetchInsights();
-  }, [storeId, timeRange]);
+  }, [storeId, timeRange, apiClient]);
 
   const filteredInsights = selectedCategory === 'all' 
     ? insights 
     : insights.filter(insight => insight.category === selectedCategory);
 
-  const categories = ['all', ...Array.from(new Set(insights.map(i => i.category)))];
+  const categories = [
+    { id: 'all', label: 'All', icon: <Brain className="h-4 w-4" /> },
+    { id: 'revenue', label: 'Revenue', icon: <DollarSign className="h-4 w-4" /> },
+    { id: 'conversion', label: 'Conversion', icon: <Target className="h-4 w-4" /> },
+    { id: 'customers', label: 'Customers', icon: <Users className="h-4 w-4" /> },
+    { id: 'marketing', label: 'Marketing', icon: <TrendingUp className="h-4 w-4" /> },
+    { id: 'operations', label: 'Operations', icon: <Package className="h-4 w-4" /> },
+  ];
 
-  const getImprovementIcon = (improvement?: string) => {
-    if (!improvement) return Minus;
-    if (improvement.startsWith('+')) return ArrowUpRight;
-    if (improvement.startsWith('-')) return ArrowDownRight;
-    return Minus;
+  const toggleInsight = (insightId: string) => {
+    const newExpanded = new Set(expandedInsights);
+    if (newExpanded.has(insightId)) {
+      newExpanded.delete(insightId);
+    } else {
+      newExpanded.add(insightId);
+    }
+    setExpandedInsights(newExpanded);
+  };
+
+  const getHealthColor = (health: string) => {
+    switch (health) {
+      case 'excellent': return 'text-green-600 bg-green-50 border-green-200';
+      case 'good': return 'text-blue-600 bg-blue-50 border-blue-200';
+      case 'warning': return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+      case 'critical': return 'text-red-600 bg-red-50 border-red-200';
+      default: return 'text-gray-600 bg-gray-50 border-gray-200';
+    }
+  };
+
+  const getHealthIcon = (health: string) => {
+    switch (health) {
+      case 'excellent': return <Star className="h-4 w-4" />;
+      case 'good': return <CheckCircle className="h-4 w-4" />;
+      case 'warning': return <AlertTriangle className="h-4 w-4" />;
+      case 'critical': return <AlertTriangle className="h-4 w-4" />;
+      default: return <Info className="h-4 w-4" />;
+    }
+  };
+
+  const getInsightIcon = (type: string, category: string) => {
+    if (type === 'success') return <CheckCircle className="h-4 w-4 text-green-600" />;
+    if (type === 'problem') return <AlertTriangle className="h-4 w-4 text-red-600" />;
+    
+    switch (category) {
+      case 'revenue': return <DollarSign className="h-4 w-4 text-green-600" />;
+      case 'conversion': return <Target className="h-4 w-4 text-blue-600" />;
+      case 'customers': return <Users className="h-4 w-4 text-purple-600" />;
+      case 'marketing': return <TrendingUp className="h-4 w-4 text-yellow-600" />;
+      case 'operations': return <Package className="h-4 w-4 text-gray-600" />;
+      default: return <Lightbulb className="h-4 w-4 text-orange-600" />;
+    }
+  };
+
+  const getSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'critical': return 'bg-red-100 text-red-800 border-red-200';
+      case 'high': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
   };
 
   if (loading) {
@@ -190,10 +216,16 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-purple-600" />
-            <CardTitle className="text-black">AI Insights</CardTitle>
+            <CardTitle className="text-black">AI Store Insights</CardTitle>
             <Badge variant="outline" className="text-xs">
               {insights.length} insights
             </Badge>
+            {analysis && (
+              <Badge className={`${getHealthColor(analysis.overallHealth)} flex items-center space-x-1`}>
+                {getHealthIcon(analysis.overallHealth)}
+                <span className="capitalize">{analysis.overallHealth}</span>
+              </Badge>
+            )}
           </div>
           <Button onClick={fetchInsights} variant="outline" size="sm">
             <RefreshCw className="h-4 w-4 mr-2" />
@@ -203,25 +235,54 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
         <CardDescription>
           Intelligent analysis of your store performance with actionable recommendations
         </CardDescription>
+        
+        {/* Summary */}
+        {analysis && (
+          <div className="bg-gray-50 rounded-lg p-4 mt-4">
+            <h3 className="font-semibold text-gray-900 mb-2">Analysis Summary</h3>
+            <p className="text-gray-700 text-sm leading-relaxed">{analysis.summary}</p>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {/* Category Filter */}
         <div className="flex flex-wrap gap-2 mb-6">
           {categories.map((category) => (
             <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              key={category.id}
+              variant={selectedCategory === category.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
-              className="capitalize"
+              onClick={() => setSelectedCategory(category.id)}
+              className="flex items-center space-x-1"
             >
-              {category === 'all' ? 'All' : category}
+              {category.icon}
+              <span>{category.label}</span>
             </Button>
           ))}
         </div>
 
+        {/* Top Priorities */}
+        {analysis && analysis.topPriorities.length > 0 && (
+          <div className="bg-blue-50 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+              <Target className="h-4 w-4 mr-2" />
+              Top Priorities
+            </h3>
+            <ol className="space-y-2">
+              {analysis.topPriorities.map((priority, index) => (
+                <li key={index} className="text-blue-800 text-sm flex items-start">
+                  <span className="bg-blue-200 text-blue-900 rounded-full w-5 h-5 flex items-center justify-center text-xs font-semibold mr-2 mt-0.5">
+                    {index + 1}
+                  </span>
+                  {priority}
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
+
         {/* Insights List */}
-        <div className="space-y-4">
+        <div className="space-y-3">
           {filteredInsights.length === 0 ? (
             <div className="text-center py-8">
               <Brain className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -239,113 +300,83 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
               )}
             </div>
           ) : (
-            filteredInsights.map((insight) => {
-              const config = typeConfig[insight.type];
-              const Icon = config.icon;
-              const CategoryIcon = categoryIcons[insight.category];
-              const ImprovementIcon = getImprovementIcon(insight.metrics?.improvement);
-
-              return (
+            filteredInsights.map((insight) => (
                 <div
                   key={insight.id}
-                  className={`p-4 rounded-lg border ${config.borderColor} ${config.bgColor}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg ${config.bgColor}`}>
-                      <Icon className={`h-5 w-5 ${config.color}`} />
-                    </div>
-                    
+                className={`cursor-pointer transition-all hover:shadow-md rounded-lg border ${
+                  insight.type === 'problem' ? 'border-red-200 hover:border-red-300' :
+                  insight.type === 'success' ? 'border-green-200 hover:border-green-300' :
+                  'border-yellow-200 hover:border-yellow-300'
+                }`}
+                onClick={() => toggleInsight(insight.id)}
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      {getInsightIcon(insight.type, insight.category)}
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center space-x-2 mb-1">
                         <h4 className="font-semibold text-gray-900">{insight.title}</h4>
-                        <Badge className={config.badgeColor} variant="secondary">
-                          {insight.type}
+                          <Badge className={`text-xs ${getSeverityColor(insight.severity)}`}>
+                            {insight.severity}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {impactConfig[insight.impact].label}
-                        </Badge>
-                        <div className="flex items-center gap-1 ml-auto">
-                          <CategoryIcon className="h-4 w-4 text-gray-500" />
-                          <span className="text-xs text-gray-500 capitalize">
-                            {insight.category}
-                          </span>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-2">{insight.description}</p>
+                        
+                        {/* Metrics Display */}
+                        <div className="flex items-center space-x-4 text-xs text-gray-500">
+                          <span>Current: ${insight.metrics.current.toFixed(2)}</span>
+                          {insight.metrics.change !== undefined && (
+                            <span className={`flex items-center ${
+                              insight.metrics.change >= 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              <TrendingUp className={`h-3 w-3 mr-1 ${
+                                insight.metrics.change < 0 ? 'rotate-180' : ''
+                              }`} />
+                              {Math.abs(insight.metrics.change).toFixed(1)}%
+                              </span>
+                          )}
                         </div>
                       </div>
-                      
-                      <p className="text-gray-700 mb-3">{insight.description}</p>
-                      
-                      {/* Metrics */}
-                      {insight.metrics && (
-                        <div className="flex items-center gap-4 mb-3">
-                          {insight.metrics.current && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm text-gray-600">Current:</span>
-                              <span className="font-medium">
-                                {typeof insight.metrics.current === 'number' && insight.metrics.current < 10
-                                  ? `${insight.metrics.current}%`
-                                  : `$${insight.metrics.current.toLocaleString()}`
-                                }
-                              </span>
-                            </div>
-                          )}
-                          
-                          {insight.metrics.potential && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-sm text-gray-600">Potential:</span>
-                              <span className="font-medium">
-                                {typeof insight.metrics.potential === 'number' && insight.metrics.potential < 10
-                                  ? `${insight.metrics.potential}%`
-                                  : `$${insight.metrics.potential.toLocaleString()}`
-                                }
-                              </span>
-                            </div>
-                          )}
-                          
-                          {insight.metrics.improvement && (
-                            <div className="flex items-center gap-1">
-                              <ImprovementIcon className="h-4 w-4 text-green-600" />
-                              <span className="text-sm font-medium text-green-600">
-                                {insight.metrics.improvement}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2 ml-4">
+                      {expandedInsights.has(insight.id) ? (
+                        <ChevronUp className="h-4 w-4 text-gray-400" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4 text-gray-400" />
                       )}
-                      
-                      {/* Actions */}
-                      {insight.actions && insight.actions.length > 0 && (
-                        <div className="mt-3">
-                          <h5 className="text-sm font-medium text-gray-900 mb-2">Recommended Actions:</h5>
-                          <ul className="space-y-1">
-                            {insight.actions.slice(0, 3).map((action, index) => (
-                              <li key={index} className="text-sm text-gray-600 flex items-start gap-2">
-                                <span className="text-purple-500 mt-1">•</span>
-                                {action}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                      
-                      {/* Confidence Score */}
-                      <div className="mt-3 flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Confidence:</span>
-                        <div className="flex-1 bg-gray-200 rounded-full h-2 max-w-20">
-                          <div
-                            className="bg-purple-500 h-2 rounded-full"
-                            style={{ width: `${insight.confidence * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          {Math.round(insight.confidence * 100)}%
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
-              );
-            })
+                
+                {expandedInsights.has(insight.id) && (
+                  <div className="border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                    <div className="p-4">
+                      <div className="space-y-4">
+                        {/* Impact */}
+                        <div>
+                          <h5 className="font-semibold text-gray-900 mb-1">Impact</h5>
+                          <p className="text-gray-700 text-sm">{insight.impact}</p>
+                        </div>
+                        
+                        {/* Recommendation */}
+                        <div>
+                          <h5 className="font-semibold text-gray-900 mb-1">Recommendation</h5>
+                          <p className="text-gray-700 text-sm">{insight.recommendation}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                </div>
+            ))
           )}
+        </div>
+
+        {/* Insights Count */}
+        <div className="text-center text-sm text-gray-500 pt-4 border-t mt-6">
+          {insights.length} insight{insights.length !== 1 ? 's' : ''} found • 
+          Last updated: {new Date().toLocaleTimeString()}
         </div>
       </CardContent>
     </Card>
