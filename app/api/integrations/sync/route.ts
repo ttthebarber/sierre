@@ -53,26 +53,37 @@ export async function POST(request: NextRequest) {
   }
   
   async function syncShopifyOrders(supabase: SupabaseClient, store: any) {
-    const ordersResponse = await fetch(`https://${store.name}.myshopify.com/admin/api/2023-01/orders.json?limit=250&status=any`, {
-      headers: { 'X-Shopify-Access-Token': store.access_token }
-    })
-    const { orders } = await ordersResponse.json()
-  
-    for (const order of orders) {
-      await supabase.from('orders').upsert({
-        store_id: store.id,
-        external_id: order.id.toString(),
-        total_price: parseFloat(order.total_price),
-        currency: order.currency,
-        status: order.financial_status,
-        customer_email: order.email,
-        line_items_count: order.line_items?.length || 0,
-        created_at: order.created_at
-      }, {
-        onConflict: 'store_id,external_id'
+    try {
+      const ordersResponse = await fetch(`https://${store.name}.myshopify.com/admin/api/2023-01/orders.json?limit=250&status=any`, {
+        headers: { 'X-Shopify-Access-Token': store.access_token }
       })
+
+      if (!ordersResponse.ok) {
+        throw new Error(`Shopify API error: ${ordersResponse.status} ${ordersResponse.statusText}`)
+      }
+
+      const data = await ordersResponse.json()
+      const orders = data.orders || []
+
+      for (const order of orders) {
+        await supabase.from('orders').upsert({
+          store_id: store.id,
+          external_id: order.id.toString(),
+          total_price: parseFloat(order.total_price || 0),
+          currency: order.currency || 'USD',
+          status: order.financial_status || 'unknown',
+          customer_email: order.email || null,
+          line_items_count: order.line_items?.length || 0,
+          created_at: order.created_at
+        }, {
+          onConflict: 'store_id,external_id'
+        })
+      }
+
+      return orders.length
+    } catch (error) {
+      console.error('Error syncing Shopify orders:', error)
+      throw error
     }
-  
-    return orders.length
   }
   

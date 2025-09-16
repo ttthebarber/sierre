@@ -7,19 +7,20 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code')
   const shop = searchParams.get('shop')
   const state = searchParams.get('state') // userId
+  const error = searchParams.get('error')
+
+  // Handle OAuth errors from Shopify
+  if (error) {
+    console.error('Shopify OAuth error:', error)
+    return NextResponse.redirect(new URL(`/dashboard?error=oauth_error&details=${encodeURIComponent(error)}`, request.url))
+  }
 
   if (!code || !shop || !state) {
+    console.error('Missing required parameters:', { code: !!code, shop, state })
     return NextResponse.redirect(new URL('/dashboard?error=invalid_callback', request.url))
   }
 
   try {
-    console.log('=== SHOPIFY CALLBACK DEBUG ===')
-    console.log('Code:', code)
-    console.log('Shop:', shop)
-    console.log('State (userId):', state)
-    console.log('SHOPIFY_API_KEY:', process.env.SHOPIFY_API_KEY ? 'SET' : 'NOT SET')
-    console.log('SHOPIFY_API_SECRET:', process.env.SHOPIFY_API_SECRET ? 'SET' : 'NOT SET')
-    console.log('================================')
 
     const supabase = await createSupabaseServerClient()
     

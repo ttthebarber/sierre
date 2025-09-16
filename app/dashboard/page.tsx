@@ -35,13 +35,8 @@ import {
   XCircle,
   ArrowUpRight,
   ArrowDownRight,
-  ChevronUp,
-  MoreVertical,
-  GripVertical,
-  Lightbulb,
 } from "lucide-react";
 import { FadeIn } from "@/components/ui/fade-in";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ProductAnalyticsTable } from "@/components/dashboard/product-analytics-table";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 import { useSearchParams } from "next/navigation";
@@ -122,7 +117,7 @@ function KPICards({
   // Mock data for connected Shopify store
   const mockKpiData = stores.length > 0 ? [
     {
-      title: "TOTAL REVENUE",
+      title: "Total Revenue",
       value: "$24,750.00",
       change: "+18.3%",
       changeType: "positive" as const,
@@ -130,7 +125,7 @@ function KPICards({
       subtext: "Revenue up from last month",
     },
     {
-      title: "ORDERS",
+      title: "Orders",
       value: "1,247",
       change: "+12.1%",
       changeType: "positive" as const,
@@ -138,7 +133,7 @@ function KPICards({
       subtext: "Higher conversion rates",
     },
     {
-      title: "AVERAGE ORDER VALUE",
+      title: "Average Order Value",
       value: "$89.50",
       change: "+5.7%",
       changeType: "positive" as const,
@@ -146,7 +141,7 @@ function KPICards({
       subtext: "Upselling strategies working",
     },
     {
-      title: "CONVERSION RATE",
+      title: "Conversion Rate",
       value: "3.2%",
       change: "+0.8%",
       changeType: "positive" as const,
@@ -155,7 +150,7 @@ function KPICards({
     },
   ] : [
     {
-      title: "TOTAL REVENUE",
+      title: "Total Revenue",
       value: "$0.00",
       change: "0%",
       changeType: "positive" as const,
@@ -163,7 +158,7 @@ function KPICards({
       subtext: "No data available",
     },
     {
-      title: "ORDERS",
+      title: "Orders",
       value: "0",
       change: "0%",
       changeType: "positive" as const,
@@ -171,7 +166,7 @@ function KPICards({
       subtext: "No data available",
     },
     {
-      title: "AVERAGE ORDER VALUE",
+      title: "Average Order Value",
       value: "$0.00",
       change: "0%",
       changeType: "positive" as const,
@@ -179,7 +174,7 @@ function KPICards({
       subtext: "No data available",
     },
     {
-      title: "CONVERSION RATE",
+      title: "Conversion rate",
       value: "0%",
       change: "0%",
       changeType: "positive" as const,
@@ -191,10 +186,10 @@ function KPICards({
   const kpiData = mockKpiData;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {kpiData.map((kpi, index) => (
-        <Card key={index} className="bg-white border border-gray-200 shadow-sm rounded-2xl">
-          <CardContent className="p-6">
+        <Card key={index} className="bg-white border border-gray-200 shadow-sm rounded-lg">
+          <CardContent>
             <div className="relative">
               {/* Title */}
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
@@ -425,7 +420,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
       </div>
       </div>
         </CardHeader>
-      <CardContent className="p-6">
+      <CardContent>
         <div className="h-80">
           {stores.length === 0 ? (
             <div className="h-full flex items-center justify-center">
@@ -657,8 +652,8 @@ function UnifiedKpiDashboard() {
         )}
 
       {/* Header Row */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
           <StoreSwitcher
             stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
             value={selected}

@@ -5,14 +5,6 @@ import { createSupabaseServerClient } from '@/lib/supabaseServer'
 export async function GET(request: NextRequest) {
     const { userId } = await auth()
     
-    // Debug logging
-    console.log('=== AUTH DEBUG ===')
-    console.log('User ID:', userId)
-    console.log('Clerk keys set:', {
-      publishable: !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
-      secret: !!process.env.CLERK_SECRET_KEY
-    })
-    console.log('==================')
     
     if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   
@@ -21,13 +13,6 @@ export async function GET(request: NextRequest) {
       const shop = searchParams.get('shop')
       if (!shop) return NextResponse.json({ error: 'Missing shop' }, { status: 400 })
 
-      // Debug: Log all environment variables
-      console.log('=== DEBUG INFO ===')
-      console.log('Shop:', shop)
-      console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
-      console.log('SHOPIFY_REDIRECT_URL:', process.env.SHOPIFY_REDIRECT_URL)
-      console.log('SHOPIFY_API_KEY:', process.env.SHOPIFY_API_KEY ? 'SET' : 'NOT SET')
-      console.log('==================')
 
       // Normalize shop input to handle full domains or prefixes
       const rawShop = shop.trim()
@@ -57,22 +42,39 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Store limit reached. Upgrade to Pro for unlimited stores.' }, { status: 403 })
       }
   
-      // Generate Shopify install URL
-      const redirectUri = process.env.SHOPIFY_REDIRECT_URL || `${process.env.NEXT_PUBLIC_APP_URL}/api/integrations/shopify/callback`
+      // Generate Shopify install URL with proper redirect URI
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      const redirectUri = process.env.SHOPIFY_REDIRECT_URL || `${baseUrl}/api/integrations/shopify/callback`
+      
+      // Ensure redirect URI is properly formatted
+      const normalizedRedirectUri = redirectUri.replace(/\/$/, '') // Remove trailing slash
       
       // Debug: Log the redirect URI being used
-      console.log('Redirect URI being sent to Shopify:', redirectUri)
-      console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
-      console.log('SHOPIFY_REDIRECT_URL:', process.env.SHOPIFY_REDIRECT_URL)
+      console.log('=== REDIRECT URI DEBUG ===')
+      console.log('Base URL:', baseUrl)
+      console.log('SHOPIFY_REDIRECT_URL env:', process.env.SHOPIFY_REDIRECT_URL)
+      console.log('Final redirect URI:', normalizedRedirectUri)
+      console.log('Shop domain:', shopDomain)
+      console.log('==========================')
+      
+      // Validate required environment variables
+      if (!process.env.SHOPIFY_API_KEY) {
+        throw new Error('SHOPIFY_API_KEY environment variable is not set')
+      }
       
       const installUrl = `https://${shopDomain}/admin/oauth/authorize?` +
         `client_id=${process.env.SHOPIFY_API_KEY}&` +
         `scope=${process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_inventory'}&` +
-        `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+        `redirect_uri=${encodeURIComponent(normalizedRedirectUri)}&` +
         `state=${userId}`
       
+      console.log('Install URL:', installUrl)
       return NextResponse.redirect(installUrl)
-    } catch {
-      return NextResponse.json({ error: 'Failed to generate install URL' }, { status: 500 })
+    } catch (error) {
+      console.error('Connect error:', error)
+      return NextResponse.json({ 
+        error: 'Failed to generate install URL', 
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 })
     }
   }

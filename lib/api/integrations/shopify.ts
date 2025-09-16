@@ -1,4 +1,4 @@
-import { apiClient } from '../client';
+import { enhancedApiClient } from '../enhanced-client';
 
 export interface ShopifyCredentials {
   shop: string;
@@ -16,32 +16,32 @@ export interface ShopifyConnectionConfig {
 export const shopifyApi = {
   // Connect to Shopify store
   connect: async (config: ShopifyConnectionConfig) => {
-    return apiClient.post('/integrations/shopify/connect', config);
+    return enhancedApiClient.post('/integrations/shopify/connect', config);
   },
   
   // Sync data from Shopify
   sync: async (integrationId: string) => {
-    return apiClient.post(`/integrations/shopify/sync`, { integrationId });
+    return enhancedApiClient.post(`/integrations/shopify/sync`, { integrationId });
   },
   
   // Get orders from Shopify
   getOrders: async (integrationId: string, dateRange?: { start: string; end: string }) => {
     const params = dateRange ? `?start=${dateRange.start}&end=${dateRange.end}` : '';
-    return apiClient.get(`/platforms/shopify/orders${params}`);
+    return enhancedApiClient.get(`/platforms/shopify/orders${params}`);
   },
   
   // Get products from Shopify
   getProducts: async (integrationId: string) => {
-    return apiClient.get(`/platforms/shopify/products`);
+    return enhancedApiClient.get(`/platforms/shopify/products`);
   },
   
   // Get analytics from Shopify
   getAnalytics: async (integrationId: string, metrics: string[]) => {
-    return apiClient.post(`/platforms/shopify/analytics`, { metrics });
+    return enhancedApiClient.post(`/platforms/shopify/analytics`, { metrics });
   },
   
   // Disconnect Shopify integration
   disconnect: async (integrationId: string) => {
-    return apiClient.delete(`/integrations/shopify/${integrationId}`);
+    return enhancedApiClient.delete(`/integrations/shopify/${integrationId}`);
   }
 };

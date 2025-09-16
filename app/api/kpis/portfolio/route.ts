@@ -2,6 +2,26 @@ import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
+function generateTimeSeries(orders: any[]) {
+  const last30Days = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    return date.toISOString().split('T')[0]
+  }).reverse()
+
+  return last30Days.map(date => {
+    const dayOrders = orders.filter(o => o.created_at.startsWith(date))
+    const revenue = dayOrders.reduce((sum, o) => sum + Number(o.total_price), 0)
+    const orderCount = dayOrders.length
+    
+    return {
+      date,
+      revenue,
+      orders: orderCount,
+      aov: orderCount > 0 ? revenue / orderCount : 0
+    }
+  })
+}
+
 // /api/kpis/portfolio/route.ts - Portfolio overview
 export async function GET() {
     const { userId } = await auth()
@@ -78,22 +98,3 @@ export async function GET() {
     }
   }
   
-  function generateTimeSeries(orders: any[]) {
-    const last30Days = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
-      return date.toISOString().split('T')[0]
-    }).reverse()
-  
-    return last30Days.map(date => {
-      const dayOrders = orders.filter(o => o.created_at.startsWith(date))
-      const revenue = dayOrders.reduce((sum, o) => sum + Number(o.total_price), 0)
-      const orderCount = dayOrders.length
-      
-      return {
-        date,
-        revenue,
-        orders: orderCount,
-        aov: orderCount > 0 ? revenue / orderCount : 0
-      }
-    })
-  }

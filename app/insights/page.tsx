@@ -192,7 +192,7 @@ export default function AIInsightsPage() {
             const Icon = stat.icon;
             return (
               <Card key={index} className="border-gray-200 shadow-sm">
-                <CardContent className="p-6">
+                <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600">{stat.title}</p>

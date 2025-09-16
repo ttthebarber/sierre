@@ -50,18 +50,14 @@ export default function SettingsPage() {
           last_inventory_sync_at: null,
         });
 
-        // Fetch AI insights status
+        // Fetch Shopify status for AI insights
         try {
-          const insightsData = await apiClient.get('/ai/insights', false) as { insights?: any[] };
           const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean };
-          
-          const insights = insightsData.insights || [];
-          const highImpactInsights = insights.filter((insight: any) => insight.impact === 'high').length;
           
           setAiInsightsStatus({
             isActive: shopifyData.connected,
-            totalInsights: insights.length,
-            highImpactInsights,
+            totalInsights: shopifyData.connected ? 5 : 0, // Mock data since AI insights are now frontend-only
+            highImpactInsights: shopifyData.connected ? 2 : 0,
             dataSources: {
               'Shopify Analytics': shopifyData.connected,
               'Google Analytics': false, // Not implemented yet

@@ -78,6 +78,7 @@ class EnhancedApiClient {
       return await response.json();
     } catch (error) {
       this.handleError(error, showErrorToUser);
+      throw error; // Re-throw the error after handling it
     }
   }
   
