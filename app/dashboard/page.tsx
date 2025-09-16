@@ -174,7 +174,7 @@ function KPICards({
           <CardContent>
             <div className="relative">
               {/* Title */}
-              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+              <p className="text-xs font-medium text-gray-500 tracking-wide mb-2">
                 {kpi.title}
               </p>
               
@@ -185,10 +185,10 @@ function KPICards({
               
               {/* Percentage Badge */}
               <div className="absolute top-0 right-0">
-                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border-gray-200 bg-white ${
+                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border border-gray-200 bg-white ${
                   kpi.changeType === "positive" 
-                    ? "text-green-600 border-green-200" 
-                    : "text-red-600 border-red-200"
+                    ? "text-green-600 border border-green-200" 
+                    : "text-red-600 border border-red-200"
                 }`}>
                   {kpi.changeType === "positive" ? (
                     <ArrowUpRight className="h-3 w-3" />
@@ -529,8 +529,8 @@ function UnifiedKpiDashboard() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center py-16">
             <div className="text-center space-y-4">
-              <div className="w-12 h-12 bg-black rounded-xl flex items-center justify-center mx-auto mb-4">
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
               </div>
               <h2 className="text-xl font-semibold text-gray-900">Loading Dashboard...</h2>
               <p className="text-gray-600">
