@@ -114,39 +114,31 @@ function KPICards({
   stores: Array<{ id: string; name: string; platform: keyof typeof PLATFORM_META; health: "good" | "warn" | "bad" }>;
   totals: { revenue: number; orders: number; aov: number };
 }) {
-  // Mock data for connected Shopify store
-  const mockKpiData = stores.length > 0 ? [
+  // Calculate KPI data from actual store data
+  const kpiData = stores.length > 0 ? [
     {
       title: "Total Revenue",
-      value: "$24,750.00",
-      change: "+18.3%",
+      value: fmtCurrency(totals.revenue),
+      change: "+0%", // TODO: Calculate from historical data
       changeType: "positive" as const,
-      status: "Strong month-over-month growth",
-      subtext: "Revenue up from last month",
     },
     {
       title: "Orders",
-      value: "1,247",
-      change: "+12.1%",
+      value: fmtNumber(totals.orders),
+      change: "+0%", // TODO: Calculate from historical data
       changeType: "positive" as const,
-      status: "Order volume increasing steadily",
-      subtext: "Higher conversion rates",
     },
     {
       title: "Average Order Value",
-      value: "$89.50",
-      change: "+5.7%",
+      value: fmtCurrency(totals.aov),
+      change: "+0%", // TODO: Calculate from historical data
       changeType: "positive" as const,
-      status: "Customers spending more per order",
-      subtext: "Upselling strategies working",
     },
     {
       title: "Conversion Rate",
-      value: "3.2%",
-      change: "+0.8%",
+      value: "0%", // TODO: Calculate from analytics
+      change: "+0%",
       changeType: "positive" as const,
-      status: "Above industry average",
-      subtext: "Optimized checkout flow",
     },
   ] : [
     {
@@ -154,36 +146,26 @@ function KPICards({
       value: "$0.00",
       change: "0%",
       changeType: "positive" as const,
-      status: "Connect your Shopify store to see revenue data",
-      subtext: "No data available",
     },
     {
       title: "Orders",
       value: "0",
       change: "0%",
       changeType: "positive" as const,
-      status: "Connect your Shopify store to see order data",
-      subtext: "No data available",
     },
     {
       title: "Average Order Value",
       value: "$0.00",
       change: "0%",
       changeType: "positive" as const,
-      status: "Connect your Shopify store to see AOV data",
-      subtext: "No data available",
     },
     {
-      title: "Conversion rate",
+      title: "Conversion Rate",
       value: "0%",
       change: "0%",
       changeType: "positive" as const,
-      status: "Connect your Shopify store to see conversion data",
-      subtext: "No data available",
     },
   ];
-
-  const kpiData = mockKpiData;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -197,16 +179,16 @@ function KPICards({
               </p>
               
               {/* Value */}
-              <p className="text-3xl font-bold text-gray-900 mb-3">
+              <p className="text-xl font-bold text-gray-900 mb-3">
                 {kpi.value}
               </p>
               
               {/* Percentage Badge */}
               <div className="absolute top-0 right-0">
-                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium border-gray-200 bg-white ${
                   kpi.changeType === "positive" 
-                    ? "bg-green-100 text-green-600" 
-                    : "bg-red-100 text-red-600"
+                    ? "text-green-600 border-green-200" 
+                    : "text-red-600 border-red-200"
                 }`}>
                   {kpi.changeType === "positive" ? (
                     <ArrowUpRight className="h-3 w-3" />
@@ -216,21 +198,6 @@ function KPICards({
                   {kpi.change}
           </div>
         </div>
-              
-              {/* Status Message */}
-              <p className="text-sm text-gray-500 mb-2">
-                {kpi.status}
-              </p>
-              
-              {/* Subtext with Arrow */}
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <span>{kpi.subtext}</span>
-                {kpi.changeType === "positive" ? (
-                  <ArrowUpRight className="h-3 w-3" />
-                ) : (
-                  <ArrowDownRight className="h-3 w-3" />
-                )}
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -245,59 +212,8 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
   const [timeRange, setTimeRange] = React.useState<"3months" | "30days" | "7days">("3months");
   const [metricType, setMetricType] = React.useState<"visitors" | "sessions" | "page_views" | "orders" | "revenue" | "conversion_rate">("visitors");
   
-  // Mock analytics data for different time ranges - realistic Shopify store data
-  const analyticsData = {
-    "3months": [
-      { 
-        date: "Oct", 
-        visitors: 2840, 
-        sessions: 3200, 
-        page_views: 12800, 
-        orders: 95, 
-        revenue: 18500, 
-        conversion_rate: 2.97 
-      },
-      { 
-        date: "Nov", 
-        visitors: 3150, 
-        sessions: 3550, 
-        page_views: 14200, 
-        orders: 112, 
-        revenue: 22100, 
-        conversion_rate: 3.15 
-      },
-      { 
-        date: "Dec", 
-        visitors: 3890, 
-        sessions: 4380, 
-        page_views: 17520, 
-        orders: 147, 
-        revenue: 28900, 
-        conversion_rate: 3.36 
-      },
-    ],
-    "30days": [
-      { date: "Dec 1", visitors: 1250, sessions: 1400, page_views: 5600, orders: 4, revenue: 680, conversion_rate: 0.29 },
-      { date: "Dec 4", visitors: 1420, sessions: 1600, page_views: 6400, orders: 5, revenue: 850, conversion_rate: 0.31 },
-      { date: "Dec 7", visitors: 1180, sessions: 1320, page_views: 5280, orders: 3, revenue: 520, conversion_rate: 0.23 },
-      { date: "Dec 10", visitors: 1680, sessions: 1890, page_views: 7560, orders: 7, revenue: 1190, conversion_rate: 0.37 },
-      { date: "Dec 13", visitors: 1920, sessions: 2160, page_views: 8640, orders: 9, revenue: 1530, conversion_rate: 0.42 },
-      { date: "Dec 16", visitors: 1450, sessions: 1630, page_views: 6520, orders: 5, revenue: 850, conversion_rate: 0.31 },
-      { date: "Dec 19", visitors: 2100, sessions: 2360, page_views: 9440, orders: 11, revenue: 1870, conversion_rate: 0.47 },
-      { date: "Dec 22", visitors: 2850, sessions: 3200, page_views: 12800, orders: 15, revenue: 2550, conversion_rate: 0.47 },
-      { date: "Dec 25", visitors: 3200, sessions: 3600, page_views: 14400, orders: 18, revenue: 3060, conversion_rate: 0.50 },
-      { date: "Dec 28", visitors: 3890, sessions: 4380, page_views: 17520, orders: 22, revenue: 3740, conversion_rate: 0.50 },
-    ],
-    "7days": [
-      { date: "Mon", visitors: 1420, sessions: 1600, page_views: 6400, orders: 6, revenue: 1020, conversion_rate: 0.38 },
-      { date: "Tue", visitors: 1680, sessions: 1890, page_views: 7560, orders: 8, revenue: 1360, conversion_rate: 0.42 },
-      { date: "Wed", visitors: 1350, sessions: 1520, page_views: 6080, orders: 5, revenue: 850, conversion_rate: 0.33 },
-      { date: "Thu", visitors: 1920, sessions: 2160, page_views: 8640, orders: 10, revenue: 1700, conversion_rate: 0.46 },
-      { date: "Fri", visitors: 2100, sessions: 2360, page_views: 9440, orders: 12, revenue: 2040, conversion_rate: 0.51 },
-      { date: "Sat", visitors: 2850, sessions: 3200, page_views: 12800, orders: 16, revenue: 2720, conversion_rate: 0.50 },
-      { date: "Sun", visitors: 3200, sessions: 3600, page_views: 14400, orders: 18, revenue: 3060, conversion_rate: 0.50 },
-    ],
-  };
+  // TODO: Replace with real analytics data from API
+  // For now, using empty data - analytics integration needed
 
   // Empty data for when no store is connected
   const emptyAnalyticsData = {
@@ -342,7 +258,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
     { value: "7days", label: "Last 7 days" },
   ];
 
-  const currentData = stores.length > 0 ? analyticsData[timeRange] : emptyAnalyticsData[timeRange];
+  const currentData = emptyAnalyticsData[timeRange]; // TODO: Replace with real analytics data
   
   const selectedMetric = metricOptions.find(opt => opt.value === metricType);
   

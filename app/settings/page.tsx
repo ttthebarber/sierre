@@ -56,8 +56,8 @@ export default function SettingsPage() {
           
           setAiInsightsStatus({
             isActive: shopifyData.connected,
-            totalInsights: shopifyData.connected ? 5 : 0, // Mock data since AI insights are now frontend-only
-            highImpactInsights: shopifyData.connected ? 2 : 0,
+            totalInsights: 0, // TODO: Calculate from actual insights
+            highImpactInsights: 0,
             dataSources: {
               'Shopify Analytics': shopifyData.connected,
               'Google Analytics': false, // Not implemented yet
