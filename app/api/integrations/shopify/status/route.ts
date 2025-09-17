@@ -10,7 +10,18 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = await createSupabaseServerClient();
+    let supabase;
+    try {
+      supabase = await createSupabaseServerClient();
+    } catch (supabaseError) {
+      console.error('Supabase client creation error:', supabaseError);
+      // Return empty state if Supabase is unavailable
+      return NextResponse.json({
+        connected: false,
+        stores: [],
+        connected_at: null,
+      });
+    }
 
     // Check if user has any Shopify stores connected
     const { data: stores, error } = await supabase
