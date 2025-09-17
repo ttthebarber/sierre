@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getShopToken } from '@/lib/integrations/shopifyDb'
 import { shopifyGet } from '@/lib/integrations/shopify'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
 
   // Example backfill: fetch orders in multiple pages (simplified)
   try {
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    
     const ordersResp = await shopifyGet<any>(shop, creds.access_token, 'orders.json?status=any&limit=250')
     const orders = ordersResp?.orders ?? []
     // Persist minimal order headers and line items (idempotent upsert)
@@ -31,7 +36,7 @@ export async function POST(req: NextRequest) {
       customer_email: o.email ?? null,
     }))
     if (orderRows.length) {
-      await supabaseServer.from('orders').upsert(orderRows, { onConflict: 'id' }).throwOnError()
+      await supabase.from('orders').upsert(orderRows, { onConflict: 'id' }).throwOnError()
     }
 
     const itemRows = orders.flatMap((o: any) =>
@@ -47,7 +52,7 @@ export async function POST(req: NextRequest) {
       }))
     )
     if (itemRows.length) {
-      await supabaseServer.from('order_items').upsert(itemRows, { onConflict: 'id' }).throwOnError()
+      await supabase.from('order_items').upsert(itemRows, { onConflict: 'id' }).throwOnError()
     }
 
     return NextResponse.json({ ok: true, fetched: orders.length })

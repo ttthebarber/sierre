@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from "@clerk/nextjs/server";
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
 // /api/integrations/shopify/connect/route.ts
 export async function GET(request: NextRequest) {
-    const { userId } = await auth()
-    
-    
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
     try {
+      const supabase = await createSupabaseServerClient()
+      
+      // Get the current user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
       const { searchParams } = new URL(request.url)
       const shop = searchParams.get('shop')
       if (!shop) return NextResponse.json({ error: 'Missing shop' }, { status: 400 })
@@ -23,20 +26,18 @@ export async function GET(request: NextRequest) {
         .replace(/\.myshopify\.com$/i, '')
         .toLowerCase()
       const shopDomain = `${normalizedShop}.myshopify.com`
-
-      const supabase = await createSupabaseServerClient()
       
       // Check subscription limits
       const { data: subscription } = await supabase
         .from('subscriptions')
         .select('plan_type')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .single()
       
       const { count: storeCount } = await supabase
         .from('stores')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
       
       const maxStores = subscription?.plan_type === 'pro' ? 999 : 2
       if ((storeCount ?? 0) >= maxStores) {
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
         `client_id=${process.env.SHOPIFY_API_KEY}&` +
         `scope=${process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_inventory'}&` +
         `redirect_uri=${encodeURIComponent(normalizedRedirectUri)}&` +
-        `state=${userId}`
+        `state=${user.id}`
       
       console.log('Install URL:', installUrl)
       return NextResponse.redirect(installUrl)

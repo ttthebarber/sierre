@@ -1,21 +1,25 @@
-import { auth } from '@clerk/nextjs/server'
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 import type { SupabaseClient } from '@supabase/supabase-js'
 // /api/integrations/sync/route.ts - Universal sync endpoint
 export async function POST(request: NextRequest) {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
     try {
       const { storeId, platform } = await request.json()
       
       const supabase = await createSupabaseServerClient()
+      
+      // Get the current user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
       const { data: store } = await supabase
         .from('stores')
         .select('*')
         .eq('id', storeId)
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .single()
   
       if (!store) return NextResponse.json({ error: 'Store not found' }, { status: 404 })

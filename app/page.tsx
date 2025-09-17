@@ -1,21 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { useEffect, useState } from "react";
+import { AuthModal } from "@/components/auth/auth-modal";
 
 const Page = () => {
   const router = useRouter();
-  const { isSignedIn, isLoaded } = useUser();
+  const { user, loading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(true);
 
   useEffect(() => {
     // Only redirect after auth state is loaded
-    if (!isLoaded) return;
+    if (loading) return;
 
     // Add a small delay to ensure smooth transition
     const timer = setTimeout(() => {
-      if (isSignedIn) {
+      if (user) {
         router.push('/dashboard');
       } else {
         // Don't redirect if not signed in - let AuthGuard handle it
@@ -24,10 +25,10 @@ const Page = () => {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [isLoaded, isSignedIn, router]);
+  }, [loading, user, router]);
 
   // Show loading while auth state is being determined
-  if (!isLoaded) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -46,7 +47,7 @@ const Page = () => {
   }
 
   // Show redirect message only for signed-in users
-  if (isSignedIn) {
+  if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -69,23 +70,10 @@ const Page = () => {
     );
   }
 
-  // For non-signed-in users, show a simple landing page
+  // For non-signed-in users, show the auth form directly
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-4">
-          Welcome to Sierre
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Track your store performance with AI-powered insights
-        </p>
-        <button 
-          onClick={() => router.push('/dashboard')} 
-          className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 transition-colors border-2 border-black"
-        >
-          Get Started
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <AuthModal isOpen={true} onClose={() => {}} />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { createClient } from '@supabase/supabase-js'
 
 // /api/fees/webhook/paddle/route.ts - Paddle webhook handler
 import crypto from 'crypto'
@@ -20,7 +20,10 @@ export async function POST(request: NextRequest) {
     const data = new URLSearchParams(body)
     const alertName = data.get('alert_name')
     
-    const supabase = await createSupabaseServerClient()
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
     
     switch (alertName) {
       case 'subscription_created':

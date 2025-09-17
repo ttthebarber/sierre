@@ -1,4 +1,3 @@
-import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
@@ -24,16 +23,20 @@ function generateTimeSeries(orders: any[]) {
 
 // /api/kpis/portfolio/route.ts - Portfolio overview
 export async function GET() {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
     try {
       const supabase = await createSupabaseServerClient()
+      
+      // Get the current user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
       // Get all user stores
       const { data: stores } = await supabase
         .from('stores')
         .select('id, name, platform, health_status')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
         .eq('is_connected', true)
   
       if (!stores?.length) {

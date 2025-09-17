@@ -9,12 +9,11 @@ import {
   Menu,
   X,
   MoreHorizontal,
-  Share2,
   User,
   CloudLightning,
   Brain,
 } from "lucide-react";
-import { UserButton, SignedIn, SignedOut, useUser, SignInButton } from "@clerk/nextjs";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -57,11 +56,11 @@ const navigation = [
 
 // Component to display user name
 function UserProfileName() {
-  const { user } = useUser();
+  const { user } = useAuth();
   
   if (!user) return null;
   
-  const displayName = user.fullName || user.firstName || user.emailAddresses[0]?.emailAddress || "User";
+  const displayName = user.user_metadata?.full_name || user.email || "User";
   
   return (
     <span className="text-sm text-gray-900 truncate">
@@ -73,6 +72,7 @@ function UserProfileName() {
 export function AppLayout({ children, title, actions }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
 
   return (
     <ErrorProvider>
@@ -130,28 +130,36 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
 
           {/* User section */}
           <div className="py-3 px-3">
-            <SignedIn>
+            {user ? (
               <div className="flex items-center space-x-2">
-                <UserButton 
-                  appearance={{
-                    elements: {
-                      avatarBox: "w-6 h-6",
-                    },
-                  }}
-                />
+                <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
                 <UserProfileName />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                      <MoreHorizontal className="h-3 w-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => signOut()}>
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-            </SignedIn>
-            <SignedOut>
-              <SignInButton mode="modal">
-                <button className="flex items-center space-x-2 w-full p-1 rounded-lg hover:bg-gray-300 transition-colors">
-                  <div className="w-6 h-6 flex items-center justify-center">
-                    <User className="h-5 w-5 text-gray-800" />
-                  </div>
-                  <span className="text-sm text-gray-800">Sign in</span>
-                </button>
-              </SignInButton>
-            </SignedOut>
+            ) : (
+              <button 
+                onClick={() => window.location.href = '/'}
+                className="flex items-center space-x-2 w-full p-1 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                <div className="w-6 h-6 flex items-center justify-center">
+                  <User className="h-5 w-5 text-gray-800" />
+                </div>
+                <span className="text-sm text-gray-800">Sign in</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { User } from "lucide-react";
-import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 interface HeaderProps {
   title?: string;
@@ -11,6 +11,8 @@ interface HeaderProps {
 }
 
 export function Header({ title = "Dashboard", className }: HeaderProps) {
+  const { user } = useAuth();
+  
   return (
     <header className={cn(
       "flex items-center justify-between px-6 py-2 bg-white border-b border-gray-300",
@@ -26,23 +28,14 @@ export function Header({ title = "Dashboard", className }: HeaderProps) {
 
       {/* Right side - Plan badge, notifications, user */}
       <div className="flex items-center space-x-4">
-
         {/* User profile */}
-        <SignedOut>
-    {/* Default look (lucide person icon) when logged out */}
-    <User className="w-5 h-5 text-gray-700" />
-  </SignedOut>
-  <SignedIn>
-    {/* Clerk will show profile image if Google account is linked */}
-    <UserButton
-      appearance={{
-        elements: {
-          avatarBox: "w-5 h-5", // size of the profile image
-        },
-      }}
-    />
-  </SignedIn>
-
+        {user ? (
+          <div className="w-5 h-5 bg-gray-800 rounded-full flex items-center justify-center">
+            <User className="w-3 h-3 text-white" />
+          </div>
+        ) : (
+          <User className="w-5 h-5 text-gray-700" />
+        )}
       </div>
     </header>
   );

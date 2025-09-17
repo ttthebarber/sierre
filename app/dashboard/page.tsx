@@ -197,7 +197,7 @@ function KPICards({
                   )}
                   {kpi.change}
           </div>
-        </div>
+              </div>
             </div>
           </CardContent>
         </Card>

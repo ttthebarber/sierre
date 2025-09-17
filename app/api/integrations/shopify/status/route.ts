@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 import { createSupabaseServerClient } from '@/lib/supabaseServer';
 
 export async function GET(request: NextRequest) {
   try {
-    const { userId } = await auth();
+    const supabase = await createSupabaseServerClient();
 
-    if (!userId) {
+    // Get the current user from Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const supabase = await createSupabaseServerClient();
 
     // Check if user has any Shopify stores connected
     const { data: stores, error } = await supabase
       .from('stores')
       .select('id, name, platform, connected_at')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .eq('platform', 'shopify')
       .eq('is_connected', true);
 

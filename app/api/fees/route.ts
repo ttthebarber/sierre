@@ -1,18 +1,22 @@
 // /api/fees/route.ts - Subscription management with Paddle
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
 export async function GET() {
-  const { userId } = await auth()
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const supabase = await createSupabaseServerClient()
+    
+    // Get the current user from Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { data: subscription } = await supabase
       .from('subscriptions')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', user.id)
       .single()
 
     return NextResponse.json({
@@ -31,19 +35,17 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId } =  await auth()
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
     const { productId } = await request.json()
     
     const supabase = await createSupabaseServerClient()
-    // Get user info from Clerk
-    const { data: user } = await supabase
-      .from('users') // You might need to sync Clerk users to Supabase
-      .select('email')
-      .eq('clerk_id', userId)
-      .single()
+    
+    // Get the current user from Supabase Auth
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Create Paddle checkout
     const paddleResponse = await fetch('https://vendors.paddle.com/api/2.0/checkout/custom', {
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
         vendor_auth_code: process.env.PADDLE_AUTH_CODE,
         product_id: productId,
         customer_email: user?.email,
-        passthrough: JSON.stringify({ userId }), // Custom data
+        passthrough: JSON.stringify({ userId: user.id }), // Custom data
         success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?success=true`,
         cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/settings?canceled=true`
       })

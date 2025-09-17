@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
-import { auth } from "@clerk/nextjs/server"
 import { createSupabaseServerClient } from '@/lib/supabaseServer'
 
 // /api/integrations/status/route.ts - Check all integrations
 export async function GET() {
-    const { userId } = await auth()
-    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
     try {
       const supabase = await createSupabaseServerClient()
+      
+      // Get the current user from Supabase Auth
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
       const { data: stores } = await supabase
         .from('stores')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', user.id)
   
       return NextResponse.json({
         stores: stores?.map(store => ({
