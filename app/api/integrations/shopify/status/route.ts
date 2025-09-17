@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       .select('id, name, platform, connected_at')
       .eq('user_id', userId)
       .eq('platform', 'shopify')
-      .eq('connected', true);
+      .eq('is_connected', true);
 
     if (error) {
       console.error('Error fetching Shopify stores:', error);

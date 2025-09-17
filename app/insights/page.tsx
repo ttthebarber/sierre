@@ -224,14 +224,18 @@ export default function AIInsightsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-center py-12">
-                <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Analytics Coming Soon
-                </h3>
-                <p className="text-gray-600">
-                  Track insight performance, implementation rates, and ROI metrics
-                </p>
+              <div className="h-80">
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Analytics Coming Soon
+                    </h3>
+                    <p className="text-gray-600">
+                      Track insight performance, implementation rates, and ROI metrics
+                    </p>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

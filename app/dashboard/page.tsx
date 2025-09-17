@@ -338,53 +338,44 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
         </CardHeader>
       <CardContent>
         <div className="h-80">
-          {stores.length === 0 ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center">
-                <TrendingUp className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Connect your store to see analytics data</p>
-              </div>
-            </div>
-          ) : (
-            <ChartContainer config={chartConfig} className="h-full">
-              <AreaChart data={currentData} margin={{ left: 12, right: 12, top: 10 }}>
-                <CartesianGrid vertical={false} stroke="#E5E7EB" />
-                <XAxis 
-                  dataKey="date" 
-                  tickLine={false} 
-                  axisLine={false} 
-                  tickMargin={8} 
-                  tick={{ fill: "#374151", fontSize: 12 }} 
-                />
-                <YAxis 
-                  tick={{ fill: "#374151", fontSize: 12 }} 
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <ChartTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value: any, name: string) => [
-                    formatTooltipValue(value),
-                    selectedMetric?.label || "Metric"
-                  ]}
-                />
-                <defs>
-                  <linearGradient id={`fill${metricType}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#111827" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#111827" stopOpacity={0.05}/>
-                  </linearGradient>
-                </defs>
-                <Area 
-                  type="monotone" 
-                  dataKey={metricType} 
-                  stroke="#111827" 
-                  strokeWidth={2}
-                  fill={`url(#fill${metricType})`}
-                  fillOpacity={1}
-                />
-              </AreaChart>
-            </ChartContainer>
-          )}
+          <ChartContainer config={chartConfig} className="h-full">
+            <AreaChart data={currentData} margin={{ left: 12, right: 12, top: 10 }}>
+              <CartesianGrid vertical={false} stroke="#E5E7EB" />
+              <XAxis 
+                dataKey="date" 
+                tickLine={false} 
+                axisLine={false} 
+                tickMargin={8} 
+                tick={{ fill: "#374151", fontSize: 12 }} 
+              />
+              <YAxis 
+                tick={{ fill: "#374151", fontSize: 12 }} 
+                tickLine={false}
+                axisLine={false}
+              />
+              <ChartTooltip 
+                content={<ChartTooltipContent />}
+                formatter={(value: any, name: string) => [
+                  formatTooltipValue(value),
+                  selectedMetric?.label || "Metric"
+                ]}
+              />
+              <defs>
+                <linearGradient id={`fill${metricType}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#111827" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#111827" stopOpacity={0.05}/>
+                </linearGradient>
+              </defs>
+              <Area 
+                type="monotone" 
+                dataKey={metricType} 
+                stroke="#111827" 
+                strokeWidth={2}
+                fill={`url(#fill${metricType})`}
+                fillOpacity={1}
+              />
+            </AreaChart>
+          </ChartContainer>
           </div>
         </CardContent>
       </Card>
