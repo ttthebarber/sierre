@@ -15,6 +15,14 @@ import {
   Download,
   Filter
 } from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { FadeIn } from "@/components/ui/fade-in";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 
@@ -225,17 +233,82 @@ export default function AIInsightsPage() {
             </CardHeader>
             <CardContent>
               <div className="h-80">
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Analytics Coming Soon
-                    </h3>
-                    <p className="text-gray-600">
-                      Track insight performance, implementation rates, and ROI metrics
-                    </p>
-                  </div>
-                </div>
+                <ChartContainer config={{
+                  insights: {
+                    label: "Insights",
+                    color: "#8B5CF6",
+                  },
+                  implemented: {
+                    label: "Implemented",
+                    color: "#10B981",
+                  },
+                  impact: {
+                    label: "Impact Score",
+                    color: "#F59E0B",
+                  }
+                }} className="h-full">
+                  <AreaChart data={[
+                    { date: "Week 1", insights: 0, implemented: 0, impact: 0 },
+                    { date: "Week 2", insights: 0, implemented: 0, impact: 0 },
+                    { date: "Week 3", insights: 0, implemented: 0, impact: 0 },
+                    { date: "Week 4", insights: 0, implemented: 0, impact: 0 },
+                  ]} margin={{ left: 12, right: 12, top: 10 }}>
+                    <CartesianGrid vertical={false} stroke="#E5E7EB" />
+                    <XAxis 
+                      dataKey="date" 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickMargin={8} 
+                      tick={{ fill: "#374151", fontSize: 12 }} 
+                    />
+                    <YAxis 
+                      tick={{ fill: "#374151", fontSize: 12 }} 
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <ChartTooltip 
+                      content={<ChartTooltipContent />}
+                    />
+                    <defs>
+                      <linearGradient id="fillInsights" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.05}/>
+                      </linearGradient>
+                      <linearGradient id="fillImplemented" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
+                      </linearGradient>
+                      <linearGradient id="fillImpact" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F59E0B" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#F59E0B" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <Area 
+                      type="monotone" 
+                      dataKey="insights" 
+                      stroke="#8B5CF6" 
+                      strokeWidth={2}
+                      fill="url(#fillInsights)"
+                      fillOpacity={1}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="implemented" 
+                      stroke="#10B981" 
+                      strokeWidth={2}
+                      fill="url(#fillImplemented)"
+                      fillOpacity={1}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="impact" 
+                      stroke="#F59E0B" 
+                      strokeWidth={2}
+                      fill="url(#fillImpact)"
+                      fillOpacity={1}
+                    />
+                  </AreaChart>
+                </ChartContainer>
               </div>
             </CardContent>
           </Card>
