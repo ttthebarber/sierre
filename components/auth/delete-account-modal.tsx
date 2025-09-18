@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/supabase/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,11 +19,21 @@ export function DeleteAccountModal({ isOpen, onClose, userEmail }: DeleteAccount
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'confirm' | 'final'>('confirm');
+  const [isVisible, setIsVisible] = useState(false);
 
   const { deleteAccount } = useAuth();
 
   const expectedText = 'DELETE';
   const isConfirmationValid = confirmText === expectedText;
+
+  useEffect(() => {
+    if (isOpen) {
+      // Trigger animation after a small delay
+      setTimeout(() => setIsVisible(true), 10);
+    } else {
+      setIsVisible(false);
+    }
+  }, [isOpen]);
 
   const handleDelete = async () => {
     if (step === 'confirm') {
@@ -63,11 +73,30 @@ export function DeleteAccountModal({ isOpen, onClose, userEmail }: DeleteAccount
     }
   };
 
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && !loading) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
+    <div 
+      className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
+        isVisible 
+          ? 'bg-black/20 backdrop-blur-sm' 
+          : 'bg-transparent backdrop-blur-none'
+      }`}
+      onClick={handleBackdropClick}
+    >
+      <div 
+        className={`bg-white rounded-lg max-w-md w-full p-6 shadow-2xl transition-all duration-300 ease-out transform ${
+          isVisible 
+            ? 'scale-100 opacity-100 translate-y-0' 
+            : 'scale-95 opacity-0 translate-y-4'
+        }`}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Trash2 className="h-5 w-5 text-red-500" />
