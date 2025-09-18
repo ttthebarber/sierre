@@ -1,12 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { createServerClient } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js'
 // /api/integrations/sync/route.ts - Universal sync endpoint
 export async function POST(request: NextRequest) {
     try {
       const { storeId, platform } = await request.json()
       
-      const supabase = await createSupabaseServerClient()
+      let response = NextResponse.next({
+        request: {
+          headers: request.headers,
+        },
+      });
+
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+              response = NextResponse.next({
+                request,
+              });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              );
+            },
+          },
+        }
+      );
       
       // Get the current user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -15,7 +40,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      const { data: store } = await supabase
+      // Create service role client for database operations
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
+      const { data: store } = await supabaseAdmin
         .from('stores')
         .select('*')
         .eq('id', storeId)
@@ -27,11 +59,11 @@ export async function POST(request: NextRequest) {
       let syncedCount = 0
   
       if (platform === 'shopify') {
-        syncedCount = await syncShopifyOrders(supabase, store)
+        syncedCount = await syncShopifyOrders(supabaseAdmin, store)
       }
   
       // Update last sync time
-      await supabase
+      await supabaseAdmin
         .from('stores')
         .update({ 
           last_sync_at: new Date().toISOString(),
@@ -42,9 +74,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ synced: syncedCount })
     } catch (error) {
       try {
-        const supabase = await createSupabaseServerClient()
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
         const { storeId } = await request.json()
-        await supabase
+        await supabaseAdmin
           .from('stores')
           .update({ health_status: 'bad' })
           .eq('id', storeId)

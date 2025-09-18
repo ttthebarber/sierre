@@ -18,13 +18,9 @@ import {
 import {
   AreaChart,
   Area,
-  LineChart,
-  Line,
   CartesianGrid,
   XAxis,
   YAxis,
-  ResponsiveContainer,
-  Tooltip,
 } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
@@ -414,7 +410,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
             </div>
           ) : (
             <ChartContainer config={chartConfig} className="h-full">
-              <AreaChart data={currentData} margin={{ left: 12, right: 12, top: 10 }}>
+              <AreaChart data={currentData} margin={{ left: 8, right: 8, top: 10, bottom: 8 }}>
                 <CartesianGrid vertical={false} stroke="#E5E7EB" />
                 <XAxis 
                   dataKey="date" 
@@ -427,6 +423,8 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
                   tick={{ fill: "#374151", fontSize: 12 }} 
                   tickLine={false}
                   axisLine={false}
+                  tickCount={4}
+                  interval="preserveStartEnd"
                 />
                 <ChartTooltip 
                   content={<ChartTooltipContent />}

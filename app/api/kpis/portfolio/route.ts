@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
 
 function generateTimeSeries(orders: any[]) {
   const last30Days = Array.from({ length: 30 }, (_, i) => {
@@ -22,9 +22,34 @@ function generateTimeSeries(orders: any[]) {
 }
 
 // /api/kpis/portfolio/route.ts - Portfolio overview
-export async function GET() {
+export async function GET(request: NextRequest) {
     try {
-      const supabase = await createSupabaseServerClient()
+      let response = NextResponse.next({
+        request: {
+          headers: request.headers,
+        },
+      });
+
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+              response = NextResponse.next({
+                request,
+              });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              );
+            },
+          },
+        }
+      );
       
       // Get the current user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -32,8 +57,16 @@ export async function GET() {
       if (authError || !user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
+
+      // Create service role client for database operations
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
       // Get all user stores
-      const { data: stores } = await supabase
+      const { data: stores } = await supabaseAdmin
         .from('stores')
         .select('id, name, platform, health_status')
         .eq('user_id', user.id)
@@ -53,7 +86,7 @@ export async function GET() {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
       const storeIds = stores.map(s => s.id)
       
-      const { data: orders } = await supabase
+      const { data: orders } = await supabaseAdmin
         .from('orders')
         .select('store_id, total_price, created_at')
         .in('store_id', storeIds)

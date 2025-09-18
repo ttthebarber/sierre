@@ -334,20 +334,20 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
                                 insight.metrics.change < 0 ? 'rotate-180' : ''
                               }`} />
                               {Math.abs(insight.metrics.change).toFixed(1)}%
-                              </span>
+                          </span>
                           )}
                         </div>
                       </div>
-                    </div>
+                            </div>
                     <div className="flex items-center space-x-2 ml-4">
                       {expandedInsights.has(insight.id) ? (
                         <ChevronUp className="h-4 w-4 text-gray-400" />
                       ) : (
                         <ChevronDown className="h-4 w-4 text-gray-400" />
                       )}
-                    </div>
-                  </div>
-                </div>
+                            </div>
+                            </div>
+                        </div>
                 
                 {expandedInsights.has(insight.id) && (
                   <div className="border-t border-gray-200 bg-gray-50 rounded-b-lg">
@@ -363,10 +363,10 @@ export function InsightsPanel({ storeId, timeRange = '30d' }: InsightsPanelProps
                         <div>
                           <h5 className="font-semibold text-gray-900 mb-1">Recommendation</h5>
                           <p className="text-gray-700 text-sm">{insight.recommendation}</p>
-                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
                 )}
                 </div>
             ))

@@ -1,10 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
+import { createServerClient } from '@supabase/ssr';
 
 // /api/integrations/shopify/connect/route.ts
 export async function GET(request: NextRequest) {
     try {
-      const supabase = await createSupabaseServerClient()
+      let response = NextResponse.next({
+        request: {
+          headers: request.headers,
+        },
+      });
+
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            getAll() {
+              return request.cookies.getAll();
+            },
+            setAll(cookiesToSet) {
+              cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+              response = NextResponse.next({
+                request,
+              });
+              cookiesToSet.forEach(({ name, value, options }) =>
+                response.cookies.set(name, value, options)
+              );
+            },
+          },
+        }
+      );
       
       // Get the current user from Supabase Auth
       const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -27,14 +52,21 @@ export async function GET(request: NextRequest) {
         .toLowerCase()
       const shopDomain = `${normalizedShop}.myshopify.com`
       
+      // Create service role client for database operations
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseAdmin = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      );
+
       // Check subscription limits
-      const { data: subscription } = await supabase
+      const { data: subscription } = await supabaseAdmin
         .from('subscriptions')
         .select('plan_type')
         .eq('user_id', user.id)
         .single()
       
-      const { count: storeCount } = await supabase
+      const { count: storeCount } = await supabaseAdmin
         .from('stores')
         .select('*', { count: 'exact', head: true })
         .eq('user_id', user.id)
@@ -52,15 +84,6 @@ export async function GET(request: NextRequest) {
       const normalizedRedirectUri = redirectUri.replace(/\/$/, '') // Remove trailing slash
       
       // Debug: Log the redirect URI being used
-      console.log('=== REDIRECT URI DEBUG ===')
-      console.log('Base URL:', baseUrl)
-      console.log('SHOPIFY_REDIRECT_URL env:', process.env.SHOPIFY_REDIRECT_URL)
-      console.log('Final redirect URI:', normalizedRedirectUri)
-      console.log('Shop domain:', shopDomain)
-      console.log('SHOPIFY_API_KEY exists:', !!process.env.SHOPIFY_API_KEY)
-      console.log('SHOPIFY_API_SECRET exists:', !!process.env.SHOPIFY_API_SECRET)
-      console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL)
-      console.log('==========================')
       
       // Validate required environment variables
       if (!process.env.SHOPIFY_API_KEY) {
@@ -73,7 +96,6 @@ export async function GET(request: NextRequest) {
         `redirect_uri=${encodeURIComponent(normalizedRedirectUri)}&` +
         `state=${user.id}`
       
-      console.log('Install URL:', installUrl)
       return NextResponse.redirect(installUrl)
     } catch (error) {
       console.error('Connect error:', error)

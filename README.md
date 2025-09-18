@@ -5,10 +5,11 @@ A comprehensive KPI tracking application built with Next.js, TypeScript, and mod
 ## ✨ Features
 
 ### 🔐 Authentication & User Management
-- **Clerk Integration**: Secure user authentication with sign-in/sign-up flows
+- **Supabase Auth**: Secure user authentication with email/password flows
 - **User Profile Management**: Profile display in sidebar with user name and avatar
 - **Protected Routes**: Middleware-based route protection
 - **Session Management**: Automatic session handling and user state management
+- **Account Deletion**: Complete account deletion with data cleanup
 
 ### 📊 Dashboard & Analytics
 - **Unified KPI Dashboard**: Comprehensive overview of all connected stores
@@ -60,16 +61,17 @@ A comprehensive KPI tracking application built with Next.js, TypeScript, and mod
 ## 🚀 Current Implementation Status
 
 ### ✅ Fully Implemented
-- **Authentication System**: Complete Clerk integration with sign-in/sign-up flows
+- **Authentication System**: Complete Supabase Auth integration with sign-in/sign-up flows
 - **Dashboard Interface**: Full KPI dashboard with charts, metrics, and store management
 - **Shopify Integration**: Complete OAuth flow, data sync, and webhook handling
 - **API Infrastructure**: Comprehensive REST API with all necessary endpoints
 - **Database Schema**: Supabase integration with proper data models
 - **UI Components**: Complete shadcn/ui component library with custom styling
 - **Responsive Design**: Mobile-first responsive layout with Notion-style interface
+- **Account Management**: Complete account deletion system with data cleanup
 
 ### 🔄 API Endpoints Available
-- **Authentication**: `/api/auth/*` - Clerk authentication handling
+- **Authentication**: `/api/auth/*` - Supabase authentication handling
 - **Shopify Integration**: `/api/integrations/shopify/*` - Complete Shopify API integration
 - **KPI Analytics**: `/api/kpis/*` - Portfolio, summary, and analytics endpoints
 - **Data Sync**: `/api/integrations/sync` - Universal data synchronization
@@ -93,8 +95,8 @@ A comprehensive KPI tracking application built with Next.js, TypeScript, and mod
 - **Lucide React** - Beautiful icon library
 
 ### Backend & Services
-- **Clerk** - Authentication and user management
-- **Supabase** - Database and real-time subscriptions
+- **Supabase Auth** - Authentication and user management
+- **Supabase Database** - Database and real-time subscriptions
 - **Shopify Admin API** - E-commerce data integration
 - **Vercel** - Deployment and hosting platform
 
@@ -128,11 +130,7 @@ A comprehensive KPI tracking application built with Next.js, TypeScript, and mod
 3. **Set up environment variables**
    Create a `.env.local` file with the following variables:
    ```env
-   # Clerk Authentication
-   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_publishable_key
-   CLERK_SECRET_KEY=sk_test_your_clerk_secret_key
-   
-   # Supabase Database
+   # Supabase Authentication & Database
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key

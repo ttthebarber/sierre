@@ -74,7 +74,7 @@ export default function AIInsightsPage() {
             });
           } else {
             // No store connected
-            setInsightStats({
+          setInsightStats({
               total: 0,
               opportunities: 0,
               warnings: 0,
@@ -252,7 +252,7 @@ export default function AIInsightsPage() {
                     { date: "Week 2", insights: 0, implemented: 0, impact: 0 },
                     { date: "Week 3", insights: 0, implemented: 0, impact: 0 },
                     { date: "Week 4", insights: 0, implemented: 0, impact: 0 },
-                  ]} margin={{ left: 12, right: 12, top: 10 }}>
+                  ]} margin={{ left: 8, right: 8, top: 10, bottom: 8 }}>
                     <CartesianGrid vertical={false} stroke="#E5E7EB" />
                     <XAxis 
                       dataKey="date" 
@@ -265,6 +265,8 @@ export default function AIInsightsPage() {
                       tick={{ fill: "#374151", fontSize: 12 }} 
                       tickLine={false}
                       axisLine={false}
+                      tickCount={4}
+                      interval="preserveStartEnd"
                     />
                     <ChartTooltip 
                       content={<ChartTooltipContent />}

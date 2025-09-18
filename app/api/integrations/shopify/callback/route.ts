@@ -45,7 +45,6 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenData = await tokenResponse.json()
-    console.log('Token response:', tokenData)
     
     if (!tokenData.access_token) {
       throw new Error('No access token in response')
@@ -68,7 +67,6 @@ export async function GET(request: NextRequest) {
       throw new Error(`Database error: ${dbError.message}`)
     }
 
-    console.log('Successfully stored Shopify connection')
     // Store connection status in a cookie that will persist through redirects
     const response = NextResponse.redirect(new URL('/dashboard?connected=shopify', request.url))
     response.cookies.set('shopify_connection_status', 'success', {

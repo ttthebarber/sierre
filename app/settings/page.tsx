@@ -277,14 +277,14 @@ export default function SettingsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">Current Plan</p>
-                <p className="text-sm text-gray-600">Free Plan</p>
+                <p className="text-sm text-gray-600">Beta test</p>
               </div>
               <Button variant="outline">Upgrade Plan</Button>
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-gray-900">Next Billing Date</p>
-                <p className="text-sm text-gray-600">No active subscription</p>
+                <p className="text-sm text-gray-600">Never</p>
               </div>
             </div>
           </CardContent>
@@ -332,9 +332,8 @@ export default function SettingsPage() {
                 </p>
               </div>
               <Button
-                variant="destructive"
                 onClick={() => setShowDeleteModal(true)}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-white text-red-600 hover:bg-red-700 hover:text-white border border-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete Account

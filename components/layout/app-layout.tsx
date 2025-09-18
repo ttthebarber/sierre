@@ -8,7 +8,6 @@ import {
   Settings, 
   Menu,
   X,
-  MoreHorizontal,
   User,
   CloudLightning,
   Brain,
@@ -16,12 +15,6 @@ import {
 import { useAuth } from "@/lib/supabase/auth-context";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { ErrorProvider } from "@/lib/contexts/error-context";
 import { ErrorDisplay } from "@/components/ui/error-display";
 
@@ -131,33 +124,32 @@ export function AppLayout({ children, title, actions }: AppLayoutProps) {
           {/* User section */}
           <div className="py-3 px-3">
             {user ? (
-              <div className="flex items-center space-x-2">
-                <div className="w-6 h-6 bg-gray-800 rounded-full flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
+              <button 
+                onClick={() => signOut()}
+                className="flex items-center space-x-2 w-full p-2 rounded-lg hover:bg-gray-300 transition-colors group"
+              >
+                <div className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden">
+                  {user.user_metadata?.avatar_url ? (
+                    <img 
+                      src={user.user_metadata.avatar_url} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-4 w-4 text-gray-600" />
+                  )}
                 </div>
                 <UserProfileName />
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      <MoreHorizontal className="h-3 w-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => signOut()}>
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
+              </button>
             ) : (
               <button 
                 onClick={() => window.location.href = '/'}
-                className="flex items-center space-x-2 w-full p-1 rounded-lg hover:bg-gray-300 transition-colors"
+                className="flex items-center space-x-2 w-full p-2 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 <div className="w-6 h-6 flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-800" />
+                  <User className="h-4 w-4 text-gray-600" />
                 </div>
-                <span className="text-sm text-gray-800">Sign in</span>
+                <span className="text-sm text-gray-600">Sign in</span>
               </button>
             )}
           </div>

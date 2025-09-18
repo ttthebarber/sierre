@@ -142,10 +142,9 @@ export function DeleteAccountModal({ isOpen, onClose, userEmail }: DeleteAccount
                 Cancel
               </Button>
               <Button
-                variant="destructive"
                 onClick={handleDelete}
                 disabled={!isConfirmationValid || loading}
-                className="flex-1"
+                className="flex-1 bg-white text-red-600 hover:bg-red-700 hover:text-white border border-red-600"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Continue to Final Step
@@ -189,10 +188,9 @@ export function DeleteAccountModal({ isOpen, onClose, userEmail }: DeleteAccount
                 Go Back
               </Button>
               <Button
-                variant="destructive"
                 onClick={handleDelete}
                 disabled={loading}
-                className="flex-1"
+                className="flex-1 bg-white text-red-600 hover:bg-red-700 hover:text-white border border-red-600"
               >
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Delete My Account
