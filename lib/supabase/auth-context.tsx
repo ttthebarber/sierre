@@ -13,6 +13,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resendConfirmation: (email: string) => Promise<{ error: any }>;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  deleteAccount: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -84,6 +85,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error };
   };
 
+  const deleteAccount = async () => {
+    try {
+      // Use the delete_user function which handles all cleanup
+      const { error } = await supabase.rpc('delete_user');
+      
+      if (!error) {
+        // Clear local state since user will be deleted
+        setUser(null);
+        setSession(null);
+      }
+      
+      return { error };
+    } catch (error) {
+      return { error };
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -97,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut,
     resendConfirmation,
     resetPassword,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

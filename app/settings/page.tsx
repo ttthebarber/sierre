@@ -6,9 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { shopifyApi } from "@/lib/api/integrations/shopify";
-import { CheckCircle, AlertCircle, Clock, RefreshCw, Trash2 } from "lucide-react";
+import { CheckCircle, AlertCircle, Clock, RefreshCw, Trash2, UserX } from "lucide-react";
 import { FadeIn } from "@/components/ui/fade-in";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
+import { useAuth } from "@/lib/supabase/auth-context";
+import { DeleteAccountModal } from "@/components/auth/delete-account-modal";
 
 interface ShopifyStatus {
   connected: boolean;
@@ -28,6 +30,7 @@ interface AIInsightsStatus {
 
 export default function SettingsPage() {
   const apiClient = useApiClientSafe();
+  const { user } = useAuth();
   const [shopifyStatus, setShopifyStatus] = useState<ShopifyStatus | null>(null);
   const [aiInsightsStatus, setAiInsightsStatus] = useState<AIInsightsStatus>({
     isActive: false,
@@ -36,6 +39,7 @@ export default function SettingsPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [shop] = useState("demo-store");
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     const loadStatus = async () => {
@@ -285,8 +289,67 @@ export default function SettingsPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Account Management */}
+        <Card className="border-red-200 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg text-red-600 flex items-center gap-2">
+              <UserX className="h-5 w-5" />
+              Account Management
+            </CardTitle>
+            <CardDescription>
+              Manage your account settings and data
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-red-700">
+                  <p className="font-medium mb-2">Danger Zone</p>
+                  <p className="mb-3">
+                    Deleting your account will permanently remove all your data, including:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-xs mb-3">
+                    <li>All connected Shopify stores and data</li>
+                    <li>Order history and analytics</li>
+                    <li>Product information and inventory</li>
+                    <li>Subscription and billing information</li>
+                    <li>Your profile and account settings</li>
+                  </ul>
+                  <p className="text-xs">
+                    This action cannot be undone. Please make sure you have exported any important data before proceeding.
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-gray-900">Delete Account</p>
+                <p className="text-sm text-gray-600">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <Button
+                variant="destructive"
+                onClick={() => setShowDeleteModal(true)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Account
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
         </div>
       </FadeIn>
+
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        userEmail={user?.email}
+      />
     </AppLayout>
   );
 }
