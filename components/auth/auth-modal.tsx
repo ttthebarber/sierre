@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthForm } from './supabase-auth-form';
-import { X } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -26,7 +25,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-50">
       <div className="relative">
-        <Card className="w-full max-w-md mx-auto shadow-lg border border-gray-200 bg-white">
+        <Card className="w-full max-w-md mx-auto bg-white border border-gray-200">
           <CardHeader className="text-center relative">
             <CardTitle className="text-2xl">
               {mode === 'signup' ? "Sign up to Sierre" : "Sign in to Sierre"}
