@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthForm } from './supabase-auth-form';
+import { X } from 'lucide-react';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -51,6 +53,14 @@ export function AuthModal({ isOpen, onClose, initialError }: AuthModalProps) {
       >
         <Card className="w-full max-w-md mx-auto bg-white border border-gray-200 shadow-2xl">
           <CardHeader className="text-center relative">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="absolute right-4 top-4 h-8 w-8 p-0 hover:bg-gray-100"
+            >
+              <X className="h-4 w-4" />
+            </Button>
             <CardTitle className="text-2xl">
               {mode === 'signup' ? "Sign up to Sierre" : "Sign in to Sierre"}
             </CardTitle>
