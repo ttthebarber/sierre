@@ -38,6 +38,11 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
+  // Allow auth callback route to pass through without redirect
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return response;
+  }
+
   // If user is not signed in and trying to access protected route, redirect to home
   if (isProtectedPath && !user) {
     return NextResponse.redirect(new URL('/', request.url));

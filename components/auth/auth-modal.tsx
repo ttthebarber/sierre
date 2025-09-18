@@ -8,9 +8,10 @@ import { AuthForm } from './supabase-auth-form';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialError?: string | null;
 }
 
-export function AuthModal({ isOpen, onClose }: AuthModalProps) {
+export function AuthModal({ isOpen, onClose, initialError }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <AuthForm mode={mode} onModeChange={setMode} />
+            <AuthForm mode={mode} onModeChange={setMode} initialError={initialError} />
           </CardContent>
         </Card>
       </div>

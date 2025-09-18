@@ -9,6 +9,17 @@ const Page = () => {
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isRedirecting, setIsRedirecting] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Check for URL parameters on mount
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
+    
+    if (errorParam === 'auth_callback_error') {
+      setError('Email confirmation failed. Please try signing in again.');
+    }
+  }, []);
 
   useEffect(() => {
     // Only redirect after auth state is loaded
@@ -73,7 +84,7 @@ const Page = () => {
   // For non-signed-in users, show the auth form directly
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <AuthModal isOpen={true} onClose={() => {}} />
+      <AuthModal isOpen={true} onClose={() => {}} initialError={error} />
     </div>
   );
 }

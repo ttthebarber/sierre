@@ -12,14 +12,15 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 interface AuthFormProps {
   mode: 'signin' | 'signup';
   onModeChange: (mode: 'signin' | 'signup') => void;
+  initialError?: string | null;
 }
 
-export function AuthForm({ mode, onModeChange }: AuthFormProps) {
+export function AuthForm({ mode, onModeChange, initialError }: AuthFormProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError || null);
   const [message, setMessage] = useState<string | null>(null);
 
   const { signIn, signUp } = useAuth();
