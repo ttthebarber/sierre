@@ -38,8 +38,8 @@ export async function middleware(request: NextRequest) {
     request.nextUrl.pathname.startsWith(path)
   );
 
-  // Allow auth callback route to pass through without redirect
-  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+  // Allow auth routes to pass through without redirect
+  if (request.nextUrl.pathname.startsWith('/auth/')) {
     return response;
   }
 
