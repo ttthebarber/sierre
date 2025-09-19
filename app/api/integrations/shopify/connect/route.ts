@@ -92,7 +92,7 @@ export async function GET(request: NextRequest) {
       
       const installUrl = `https://${shopDomain}/admin/oauth/authorize?` +
         `client_id=${process.env.SHOPIFY_API_KEY}&` +
-        `scope=${process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_inventory'}&` +
+        `scope=${process.env.SHOPIFY_SCOPES || 'read_orders,read_products,read_inventory,read_customers'}&` +
         `redirect_uri=${encodeURIComponent(normalizedRedirectUri)}&` +
         `state=${user.id}`
       

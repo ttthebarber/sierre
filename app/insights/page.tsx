@@ -50,57 +50,39 @@ export default function AIInsightsPage() {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
+  const [analyticsData, setAnalyticsData] = useState<any[]>([]);
+
   useEffect(() => {
     // Fetch insight statistics and app data
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Fetch insights from the new AI insights service
-        try {
-          // Get store data to calculate insights stats
-          const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean, stores?: any[] };
-          
-          if (shopifyData.connected && shopifyData.stores && shopifyData.stores.length > 0) {
-            // Calculate stats based on connected stores
-            // The actual insights are generated in the InsightsPanel component
-            setInsightStats({
-              total: 0, // Will be calculated by the InsightsPanel
-              opportunities: 0,
-              warnings: 0,
-              recommendations: 0,
-              successes: 0,
-              highImpact: 0,
-              actionable: 0,
-            });
-          } else {
-            // No store connected
-          setInsightStats({
-              total: 0,
-              opportunities: 0,
-              warnings: 0,
-              recommendations: 0,
-              successes: 0,
-              highImpact: 0,
-              actionable: 0,
-            });
-          }
-        } catch (error) {
-          // Silently handle errors for insights
-          setInsightStats({
-            total: 0,
-            opportunities: 0,
-            warnings: 0,
-            recommendations: 0,
-            successes: 0,
-            highImpact: 0,
-            actionable: 0,
-          });
-        }
+        // Fetch insights from the new insights API
+        const insightsData = await apiClient.get('/insights', false) as {
+          total: number;
+          opportunities: number;
+          warnings: number;
+          recommendations: number;
+          successes: number;
+          highImpact: number;
+          actionable: number;
+          analyticsData: any[];
+        };
+        
+        setInsightStats({
+          total: insightsData.total,
+          opportunities: insightsData.opportunities,
+          warnings: insightsData.warnings,
+          recommendations: insightsData.recommendations,
+          successes: insightsData.successes,
+          highImpact: insightsData.highImpact,
+          actionable: insightsData.actionable,
+        });
 
-        // Fetch data source connections
+        setAnalyticsData(insightsData.analyticsData || []);
 
       } catch (error) {
-        console.error('Failed to fetch data:', error);
+        console.error('Failed to fetch insights data:', error);
         setInsightStats({
           total: 0,
           opportunities: 0,
@@ -110,13 +92,14 @@ export default function AIInsightsPage() {
           highImpact: 0,
           actionable: 0,
         });
+        setAnalyticsData([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [timeRange]);
+  }, [timeRange, apiClient]);
 
 
   const statCards = [
@@ -247,7 +230,7 @@ export default function AIInsightsPage() {
                     color: "#F59E0B",
                   }
                 }} className="h-full">
-                  <AreaChart data={[
+                  <AreaChart data={analyticsData.length > 0 ? analyticsData : [
                     { date: "Week 1", insights: 0, implemented: 0, impact: 0 },
                     { date: "Week 2", insights: 0, implemented: 0, impact: 0 },
                     { date: "Week 3", insights: 0, implemented: 0, impact: 0 },

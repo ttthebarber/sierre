@@ -203,6 +203,151 @@ function KPICards({
 }
 
 
+// ---- Customer Metrics Card ----
+function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
+  const [customerMetrics, setCustomerMetrics] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+  const apiClient = useApiClientSafe();
+
+  React.useEffect(() => {
+    const fetchCustomerMetrics = async () => {
+      if (stores.length === 0) {
+        setCustomerMetrics({
+          totalCustomers: 0,
+          newCustomersThisMonth: 0,
+          customerAcquisitionRate: 0,
+          customerLifetimeValue: 0,
+          averageOrderValue: 0,
+          customerRetentionRate: 0,
+          repeatCustomerRate: 0
+        });
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const data = await apiClient.get('/analytics/customers', false);
+        setCustomerMetrics(data);
+      } catch (error) {
+        console.error('Error fetching customer metrics:', error);
+        setCustomerMetrics({
+          totalCustomers: 0,
+          newCustomersThisMonth: 0,
+          customerAcquisitionRate: 0,
+          customerLifetimeValue: 0,
+          averageOrderValue: 0,
+          customerRetentionRate: 0,
+          repeatCustomerRate: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCustomerMetrics();
+  }, [stores, apiClient]);
+
+  if (loading) {
+    return (
+      <Card className="border-gray-200 shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">Customer Metrics</CardTitle>
+          <CardDescription>Comprehensive customer analytics and performance metrics</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const metrics = [
+    {
+      title: "Total Customers",
+      value: fmtNumber(customerMetrics?.totalCustomers || 0),
+      description: "Total number of customers across all stores",
+      format: "number"
+    },
+    {
+      title: "New Customers This Month",
+      value: fmtNumber(customerMetrics?.newCustomersThisMonth || 0),
+      description: "Customers who made their first purchase in the last 30 days",
+      format: "number"
+    },
+    {
+      title: "Customer Acquisition Rate",
+      value: `${customerMetrics?.customerAcquisitionRate || 0}%`,
+      description: "Percentage of new customers relative to total customers",
+      format: "percentage"
+    },
+    {
+      title: "Customer Lifetime Value",
+      value: fmtCurrency(customerMetrics?.customerLifetimeValue || 0),
+      description: "Average revenue generated per customer over their lifetime",
+      format: "currency"
+    },
+    {
+      title: "Average Order Value",
+      value: fmtCurrency(customerMetrics?.averageOrderValue || 0),
+      description: "Average value of each order across all customers",
+      format: "currency"
+    },
+    {
+      title: "Customer Retention Rate",
+      value: `${customerMetrics?.customerRetentionRate || 0}%`,
+      description: "Percentage of customers who made repeat purchases",
+      format: "percentage"
+    },
+    {
+      title: "Repeat Customer Rate",
+      value: `${customerMetrics?.repeatCustomerRate || 0}%`,
+      description: "Percentage of customers with more than one order",
+      format: "percentage"
+    },
+  ];
+
+  return (
+    <Card className="border-gray-200 shadow-sm">
+      <CardHeader>
+        <CardTitle className="text-lg">Customer Metrics</CardTitle>
+        <CardDescription>Comprehensive customer analytics and performance metrics</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {metrics.map((metric, index) => (
+            <div key={index} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-gray-900 mb-1">{metric.title}</h3>
+                <p className="text-xs text-gray-600 leading-relaxed">{metric.description}</p>
+              </div>
+              <div className="ml-4 text-right">
+                <div className="text-xl font-bold text-gray-900 mb-1">{metric.value}</div>
+                <div className="text-xs text-gray-500 capitalize">{metric.format}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {stores.length === 0 && (
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-center border border-blue-200">
+            <p className="text-sm text-blue-800 font-medium mb-1">No Customer Data Available</p>
+            <p className="text-xs text-blue-600">
+              Connect a Shopify store to see comprehensive customer metrics and analytics
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ---- Total Visitors Chart ----
 function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
   const [timeRange, setTimeRange] = React.useState<"3months" | "30days" | "7days">("30days");
@@ -303,7 +448,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
     };
 
     fetchAnalyticsData();
-  }, [stores.length, timeRange, apiClient]);
+  }, [stores, timeRange, apiClient]);
 
   // Shopify analytics metrics available through read_analytics scope
   const metricOptions = [
@@ -417,10 +562,10 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
                   tickLine={false} 
                   axisLine={false} 
                   tickMargin={8} 
-                  tick={{ fill: "#374151", fontSize: 12 }} 
+                  tick={{ fill: "#374151", fontSize: 10 }} 
                 />
                 <YAxis 
-                  tick={{ fill: "#374151", fontSize: 12 }} 
+                  tick={{ fill: "#374151", fontSize: 10 }} 
                   tickLine={false}
                   axisLine={false}
                   tickCount={4}
@@ -495,32 +640,10 @@ function UnifiedKpiDashboard() {
     } else if (error) {
       setConnectionStatus({
         type: 'error',
-        message: details ? decodeURIComponent(details) : 'Connection failed. Please try again.'
+        message: details || 'Connection failed. Please try again.'
       });
       // Clear the URL parameters
       window.history.replaceState({}, '', '/dashboard');
-    } else {
-      // Check for connection status in cookies (fallback for auth redirects)
-      const cookieStatus = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('shopify_connection_status='))
-        ?.split('=')[1];
-      
-      if (cookieStatus === 'success') {
-        setConnectionStatus({
-          type: 'success',
-          message: 'Shopify store connected successfully!'
-        });
-        // Clear the cookie
-        document.cookie = 'shopify_connection_status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      } else if (cookieStatus === 'error') {
-        setConnectionStatus({
-          type: 'error',
-          message: 'Connection failed. Please try again.'
-        });
-        // Clear the cookie
-        document.cookie = 'shopify_connection_status=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      }
     }
   }, [searchParams]);
 
@@ -652,8 +775,11 @@ function UnifiedKpiDashboard() {
         />
 
 
-        {/* Total Visitors Chart */}
+        {/* Analytics Charts - 2 Equal Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <TotalVisitorsChart stores={stores} />
+              <CustomerMetricsCard stores={stores} />
+        </div>
 
         {/* Product Analytics Table */}
         <ProductAnalyticsTable stores={stores} />
