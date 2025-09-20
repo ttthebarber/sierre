@@ -252,16 +252,20 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
       <Card className="border-gray-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg">Customer Metrics</CardTitle>
-          <CardDescription>Comprehensive customer analytics and performance metrics</CardDescription>
+          <CardDescription>See customer metrics across all stores</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {[...Array(7)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-6 bg-gray-200 rounded w-1/2"></div>
-              </div>
-            ))}
+          <div className="h-80 overflow-y-auto">
+            <div className="space-y-2">
+              {[...Array(7)].map((_, i) => (
+                <div key={i} className="animate-pulse p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -272,44 +276,30 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
     {
       title: "Total Customers",
       value: fmtNumber(customerMetrics?.totalCustomers || 0),
-      description: "Total number of customers across all stores",
-      format: "number"
     },
     {
       title: "New Customers This Month",
       value: fmtNumber(customerMetrics?.newCustomersThisMonth || 0),
-      description: "Customers who made their first purchase in the last 30 days",
-      format: "number"
     },
     {
       title: "Customer Acquisition Rate",
       value: `${customerMetrics?.customerAcquisitionRate || 0}%`,
-      description: "Percentage of new customers relative to total customers",
-      format: "percentage"
     },
     {
       title: "Customer Lifetime Value",
       value: fmtCurrency(customerMetrics?.customerLifetimeValue || 0),
-      description: "Average revenue generated per customer over their lifetime",
-      format: "currency"
     },
     {
       title: "Average Order Value",
       value: fmtCurrency(customerMetrics?.averageOrderValue || 0),
-      description: "Average value of each order across all customers",
-      format: "currency"
     },
     {
       title: "Customer Retention Rate",
       value: `${customerMetrics?.customerRetentionRate || 0}%`,
-      description: "Percentage of customers who made repeat purchases",
-      format: "percentage"
     },
     {
       title: "Repeat Customer Rate",
       value: `${customerMetrics?.repeatCustomerRate || 0}%`,
-      description: "Percentage of customers with more than one order",
-      format: "percentage"
     },
   ];
 
@@ -317,29 +307,29 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
     <Card className="border-gray-200 shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg">Customer Metrics</CardTitle>
-        <CardDescription>Comprehensive customer analytics and performance metrics</CardDescription>
+        <CardDescription>See customer metrics across all stores</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-6">
-          {metrics.map((metric, index) => (
-            <div key={index} className="flex items-start justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-gray-900 mb-1">{metric.title}</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">{metric.description}</p>
+          <div className="h-80 overflow-y-auto">
+          <div className="space-y-2">
+            {metrics.map((metric, index) => (
+              <div key={index} className="flex items-center justify-between p-3">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-gray-600">{metric.title}</h3>
+                </div>
+                <div className="ml-2 text-right">
+                  <div className="text-lg font-bold text-gray-600">{metric.value}</div>
+                </div>
               </div>
-              <div className="ml-4 text-right">
-                <div className="text-xl font-bold text-gray-900 mb-1">{metric.value}</div>
-                <div className="text-xs text-gray-500 capitalize">{metric.format}</div>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
         
         {stores.length === 0 && (
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg text-center border border-blue-200">
-            <p className="text-sm text-blue-800 font-medium mb-1">No Customer Data Available</p>
-            <p className="text-xs text-blue-600">
-              Connect a Shopify store to see comprehensive customer metrics and analytics
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-center border border-gray-200">
+            <p className="text-sm text-gray-600 font-medium mb-1">No Customer Data Available</p>
+            <p className="text-xs text-gray-600">
+              Connect a Shopify store to see customer metrics and analytics
             </p>
           </div>
         )}
