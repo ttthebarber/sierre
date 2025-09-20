@@ -25,7 +25,6 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import {
   ChevronDown,
-  TrendingUp,
   Store,
   CheckCircle,
   XCircle,
@@ -71,13 +70,10 @@ function StoreSwitcher({
             <ChevronDown className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64 bg-white border-gray-200">
+        <DropdownMenuContent className="w-auto bg-white border-gray-200">
           <DropdownMenuLabel className="text-black">Switch store</DropdownMenuLabel>
           <DropdownMenuSeparator className="bg-gray-200" />
           <DropdownMenuRadioGroup value={value} onValueChange={onChange}>
-            <DropdownMenuRadioItem value="all" className="text-black hover:bg-gray-200">
-              All Stores
-            </DropdownMenuRadioItem>
             {stores.map((s) => (
               <DropdownMenuRadioItem key={s.id} value={s.id} className="text-black hover:bg-gray-200">
                 <span className={`inline-flex items-center gap-2`}>
