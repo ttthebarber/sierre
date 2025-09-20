@@ -486,11 +486,6 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
             <CardTitle className="text-xl font-semibold text-gray-900">
               {selectedMetric?.label || "Analytics"}
             </CardTitle>
-            <CardDescription className="text-gray-500 text-sm">
-              {timeRange === "3months" && `Monthly ${selectedMetric?.label.toLowerCase()} for the last 3 months`}
-              {timeRange === "30days" && `Daily ${selectedMetric?.label.toLowerCase()} for the last 30 days`}
-              {timeRange === "7days" && `Daily ${selectedMetric?.label.toLowerCase()} for the last 7 days`}
-            </CardDescription>
           </div>
           
           <div className="flex items-center gap-3">
@@ -523,7 +518,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
                   onClick={() => setTimeRange(option.value as any)}
                   className={`px-2 py-1 text-sm font-sm rounded-md transition-colors ${
                     timeRange === option.value
-                      ? "bg-white text-gray-900 shadow-sm font-semibold"
+                      ? "bg-white text-gray-900 shadow-sm font-normal"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
