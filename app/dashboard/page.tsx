@@ -203,7 +203,7 @@ function KPICards({
 }
 
 
-// ---- Customer Metrics Card ----
+// Updated Customer Metrics Card with tighter layout
 function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
   const [customerMetrics, setCustomerMetrics] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
@@ -250,18 +250,18 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
   if (loading) {
     return (
       <Card className="border-gray-200 shadow-sm">
-        <CardHeader>
+        <CardHeader className="pb-3">
           <CardTitle className="text-lg">Customer Metrics</CardTitle>
           <CardDescription>See customer metrics across all stores</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           <div className="h-80 overflow-y-auto">
-            <div className="space-y-2">
+            <div className="space-y-1">
               {[...Array(7)].map((_, i) => (
-                <div key={i} className="animate-pulse p-3">
+                <div key={i} className="animate-pulse p-2">
                   <div className="flex items-center justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
                   </div>
                 </div>
               ))}
@@ -305,20 +305,20 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
 
   return (
     <Card className="border-gray-200 shadow-sm">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg">Customer Metrics</CardTitle>
         <CardDescription>See customer metrics across all stores</CardDescription>
       </CardHeader>
-      <CardContent>
-          <div className="h-80 overflow-y-auto">
-          <div className="space-y-2">
+      <CardContent className="pt-0">
+        <div className="h-80 overflow-y-auto">
+          <div className="space-y-1">
             {metrics.map((metric, index) => (
-              <div key={index} className="flex items-center justify-between p-3">
+              <div key={index} className="flex items-center justify-between py-1.5 px-2">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-gray-600">{metric.title}</h3>
+                  <h3 className="text-xs font-medium text-gray-600 leading-tight">{metric.title}</h3>
                 </div>
                 <div className="ml-2 text-right">
-                  <div className="text-lg font-bold text-gray-600">{metric.value}</div>
+                  <div className="text-sm font-semibold text-gray-900">{metric.value}</div>
                 </div>
               </div>
             ))}
@@ -326,9 +326,9 @@ function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: stri
         </div>
         
         {stores.length === 0 && (
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg text-center border border-gray-200">
-            <p className="text-sm text-gray-600 font-medium mb-1">No Customer Data Available</p>
-            <p className="text-xs text-gray-600">
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-center border border-gray-200">
+            <p className="text-xs text-gray-600 font-medium mb-1">No Customer Data Available</p>
+            <p className="text-xs text-gray-500">
               Connect a Shopify store to see customer metrics and analytics
             </p>
           </div>
@@ -521,7 +521,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
                 <button
                   key={option.value}
                   onClick={() => setTimeRange(option.value as any)}
-                  className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  className={`px-2 py-1 text-sm font-sm rounded-md transition-colors ${
                     timeRange === option.value
                       ? "bg-white text-gray-900 shadow-sm font-semibold"
                       : "text-gray-600 hover:text-gray-900"
@@ -545,7 +545,7 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
             </div>
           ) : (
             <ChartContainer config={chartConfig} className="h-full">
-              <AreaChart data={currentData} margin={{ left: 8, right: 8, top: 10, bottom: 8 }}>
+              <AreaChart data={currentData} margin={{ left: 2, right: 2, top: 10, bottom: 8 }}>
                 <CartesianGrid vertical={false} stroke="#E5E7EB" />
                 <XAxis 
                   dataKey="date" 
@@ -764,11 +764,16 @@ function UnifiedKpiDashboard() {
         totals={totals}
         />
 
-
-        {/* Analytics Charts - 2 Equal Columns */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <TotalVisitorsChart stores={stores} />
-              <CustomerMetricsCard stores={stores} />
+        {/* Analytics Charts - Adjusted Column Widths */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          {/* Total Visitors Chart - Takes 2/3 of the space */}
+          <div className="lg:col-span-2">
+            <TotalVisitorsChart stores={stores} />
+          </div>
+          {/* Customer Metrics - Takes 1/3 of the space */}
+          <div className="lg:col-span-1">
+            <CustomerMetricsCard stores={stores} />
+          </div>
         </div>
 
         {/* Product Analytics Table */}
