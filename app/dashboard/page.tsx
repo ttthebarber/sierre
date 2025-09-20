@@ -65,7 +65,7 @@ function StoreSwitcher({
           <Button variant="outline" className="flex items-center gap-2 border-gray-300 bg-white hover:bg-gray-200 text-black">
             <Store className="h-4 w-4" />
             <span className="truncate max-w-[200px]">
-              {value === "all" ? "All Stores" : stores.find((s) => s.id === value)?.name || "Select store"}
+              {stores.find((s) => s.id === value)?.name || "Select store"}
             </span>
             <ChevronDown className="h-4 w-4" />
           </Button>
