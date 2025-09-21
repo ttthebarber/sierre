@@ -1,7 +1,7 @@
 "use client";
 
-import { createClient } from '@supabase/supabase-js'
 import React from "react";
+import dynamic from "next/dynamic";
 import { AppLayout } from "@/components/layout/app-layout";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import { FadeIn } from "@/components/ui/fade-in";
 import { ProductAnalyticsTable } from "@/components/dashboard/product-analytics-table";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 import { useSearchParams } from "next/navigation";
+import { createClient } from '@supabase/supabase-js';
 
 // ---- Utilities ----
 const fmtCurrency = (n: number) =>
@@ -46,6 +47,58 @@ const fmtNumber = (n: number) => new Intl.NumberFormat(undefined).format(n || 0)
 const PLATFORM_META: Record<string, { label: string; tint: string }> = {
   shopify: { label: "Shopify", tint: "bg-[#FDE68A]" }, // yellow tint
 };
+
+// Dashboard Skeleton Component
+function DashboardSkeleton() {
+  return (
+    <FadeIn>
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="h-10 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* KPI Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, index) => (
+            <div key={index} className="bg-white border border-gray-200 shadow-sm rounded-lg p-6">
+              <div className="h-4 bg-gray-200 rounded w-2/3 mb-3 animate-pulse"></div>
+              <div className="h-6 bg-gray-200 rounded w-1/2 mb-3 animate-pulse"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Charts Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="lg:col-span-2">
+            <div className="bg-white border border-gray-200 shadow-sm rounded-2xl p-6">
+              <div className="h-6 bg-gray-200 rounded w-1/3 mb-4 animate-pulse"></div>
+              <div className="h-80 bg-gray-100 rounded animate-pulse"></div>
+            </div>
+          </div>
+          <div className="lg:col-span-1">
+            <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-6">
+              <div className="h-6 bg-gray-200 rounded w-2/3 mb-4 animate-pulse"></div>
+              <div className="h-80 bg-gray-100 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Skeleton */}
+        <div className="bg-white border border-gray-200 shadow-sm rounded-lg p-6">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4 animate-pulse"></div>
+          <div className="space-y-3">
+            {[...Array(5)].map((_, index) => (
+              <div key={index} className="h-4 bg-gray-200 rounded animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
 
 // ---- Store Switcher (with "All Stores" + Add) ----
 function StoreSwitcher({
@@ -189,7 +242,7 @@ function KPICards({
                     <ArrowDownRight className="h-3 w-3" />
                   )}
                   {kpi.change}
-          </div>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -198,7 +251,6 @@ function KPICards({
     </div>
   );
 }
-
 
 // Updated Customer Metrics Card with tighter layout
 function CustomerMetricsCard({ stores }: { stores: Array<{id: string; name: string; platform: string; metrics: any; summary: any}> }) {
@@ -487,25 +539,25 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
           
           <div className="flex items-center gap-3">
             {/* Metric Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-gray-200 bg-white hover:bg-gray-200 text-black">
                   {selectedMetric?.label}
-                <ChevronDown className="h-4 w-4 ml-2" />
-              </Button>
-            </DropdownMenuTrigger>
+                  <ChevronDown className="h-4 w-4 ml-2" />
+                </Button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent className="w-48 bg-white border-gray-200">
                 <DropdownMenuLabel className="text-black">Analytics Metric</DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-gray-200" />
+                <DropdownMenuSeparator className="bg-gray-200" />
                 <DropdownMenuRadioGroup value={metricType} onValueChange={(v) => setMetricType(v as any)}>
                   {metricOptions.map((option) => (
                     <DropdownMenuRadioItem key={option.value} value={option.value} className="text-black hover:bg-gray-200">
                       {option.label}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Time Range Toggle Buttons */}
             <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
@@ -522,10 +574,10 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
                   {option.label}
                 </button>
               ))}
+            </div>
+          </div>
         </div>
-      </div>
-      </div>
-        </CardHeader>
+      </CardHeader>
       <CardContent>
         <div className="h-80">
           {loading ? (
@@ -577,37 +629,33 @@ function TotalVisitorsChart({ stores }: { stores: Array<{id: string; name: strin
               </AreaChart>
             </ChartContainer>
           )}
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
-
-
-
-// ---- Main Dashboard Page ----
-const Dashboard = () => {
-  return (
-    <AuthGuard>
-    <AppLayout title="Dashboard">
-          <UnifiedKpiDashboard />
-    </AppLayout>
-    </AuthGuard>
-  );
-};
-
-// ---- Unified KPI Dashboard ----
-function UnifiedKpiDashboard() {
+// ---- Unified KPI Dashboard Content ----
+function UnifiedKpiDashboardContent() {
   const apiClient = useApiClientSafe();
   const searchParams = useSearchParams();
   const [stores, setStores] = React.useState<any[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [selected, setSelected] = React.useState<string>("all");
   const [connectionStatus, setConnectionStatus] = React.useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  // Ensure component is mounted before running client-side code
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Helper function to fetch analytics data
   const fetchShopifyAnalytics = async (store: any, userId: string) => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     try {
       const response = await fetch('/api/shopify/analytics', {
         method: 'POST',
@@ -636,6 +684,8 @@ function UnifiedKpiDashboard() {
 
   // Handle query parameters for connection status
   React.useEffect(() => {
+    if (!isMounted) return;
+
     const connected = searchParams.get('connected');
     const error = searchParams.get('error');
     const details = searchParams.get('details');
@@ -653,13 +703,15 @@ function UnifiedKpiDashboard() {
       });
       window.history.replaceState({}, '', '/dashboard');
     }
-  }, [searchParams]);
+  }, [searchParams, isMounted]);
 
   // Load store data and fetch analytics
   React.useEffect(() => {
+    if (!isMounted) return;
+
     const loadStores = async () => {
       try {
-        // Get current user
+        // Get current user with separate Supabase client
         const supabase = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -729,7 +781,12 @@ function UnifiedKpiDashboard() {
     };
 
     loadStores();
-  }, [apiClient]);
+  }, [apiClient, isMounted]);
+
+  // Don't render anything until mounted
+  if (!isMounted || loading) {
+    return <DashboardSkeleton />;
+  }
 
   const activeStores = selected === "all" ? stores : stores.filter((s) => s.id === selected);
 
@@ -749,27 +806,6 @@ function UnifiedKpiDashboard() {
   const handleAddStore = () => {
     window.location.href = "/integrations";
   };
-
-  // Show loading state while fetching stores
-  if (loading) {
-    return (
-      <FadeIn>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-16">
-            <div className="text-center space-y-4">
-              <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <h2 className="text-xl font-semibold text-gray-900">Loading Dashboard...</h2>
-              <p className="text-gray-600">
-                Please wait while we load your store data.
-              </p>
-            </div>
-          </div>
-        </div>
-      </FadeIn>
-    );
-  }
 
   return (
     <FadeIn>
@@ -831,3 +867,25 @@ function UnifiedKpiDashboard() {
     </FadeIn>
   );
 }
+
+// Dynamic import of dashboard content with proper loading
+const DynamicDashboardContent = dynamic(
+  () => Promise.resolve({ default: UnifiedKpiDashboardContent }),
+  {
+    ssr: false,
+    loading: () => <DashboardSkeleton />
+  }
+);
+
+// ---- Main Dashboard Page ----
+const Dashboard = () => {
+  return (
+    <AuthGuard>
+      <AppLayout title="Dashboard">
+        <DynamicDashboardContent />
+      </AppLayout>
+    </AuthGuard>
+  );
+};
+
+export default Dashboard;
