@@ -1,5 +1,6 @@
 "use client";
 
+import { createClient } from '@supabase/supabase-js'
 import React from "react";
 import { AppLayout } from "@/components/layout/app-layout";
 import { AuthGuard } from "@/components/auth/auth-guard";
@@ -605,6 +606,34 @@ function UnifiedKpiDashboard() {
   const [selected, setSelected] = React.useState<string>("all");
   const [connectionStatus, setConnectionStatus] = React.useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''});
 
+  // Helper function to fetch analytics data
+  const fetchShopifyAnalytics = async (store: any, userId: string) => {
+    try {
+      const response = await fetch('/api/shopify/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shop: store.shop || store.name,
+          accessToken: store.access_token,
+          userId: userId
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Analytics fetched for', store.name, ':', result.data);
+        return result.data;
+      } else {
+        console.error('Analytics failed for', store.name, ':', result.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      return null;
+    }
+  };
+
   // Handle query parameters for connection status
   React.useEffect(() => {
     const connected = searchParams.get('connected');
@@ -616,29 +645,60 @@ function UnifiedKpiDashboard() {
         type: 'success',
         message: 'Shopify store connected successfully!'
       });
-      // Clear the URL parameters
       window.history.replaceState({}, '', '/dashboard');
     } else if (error) {
       setConnectionStatus({
         type: 'error',
         message: details || 'Connection failed. Please try again.'
       });
-      // Clear the URL parameters
       window.history.replaceState({}, '', '/dashboard');
     }
   }, [searchParams]);
 
-  // Load store data on component mount
+  // Load store data and fetch analytics
   React.useEffect(() => {
     const loadStores = async () => {
       try {
+        // Get current user
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        )
+        const { data: { user } } = await supabase.auth.getUser();
+        
         // Fetch connected stores
         const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean, stores?: any[] };
         
-        // Process store data
         const processedStores: any[] = [];
         
-        if (shopifyData.connected && shopifyData.stores) {
+        if (shopifyData.connected && shopifyData.stores && user) {
+          for (const store of shopifyData.stores) {
+            // Fetch fresh analytics data
+            let analyticsData = null;
+            if (store.access_token) {
+              analyticsData = await fetchShopifyAnalytics(store, user.id);
+            }
+            
+            processedStores.push({
+              id: store.id || store.name,
+              name: store.name,
+              platform: 'shopify',
+              summary: {
+                revenue: analyticsData?.grossRevenue || store.revenue || 0,
+                orders: analyticsData?.totalOrders || store.orders || 0,
+                aov: analyticsData?.averageOrderValue || store.aov || 0,
+                conversion: analyticsData?.conversionRate || store.conversion_rate || 0,
+              },
+              metrics: {
+                health: store.is_connected ? 'good' : 'warning',
+                growth: analyticsData?.growthRate || store.growth_rate || 0,
+                inventory: store.inventory_status || 'normal',
+              },
+              analyticsData: analyticsData
+            });
+          }
+        } else if (shopifyData.connected && shopifyData.stores) {
+          // Fallback for when user is not available
           shopifyData.stores.forEach((store: any) => {
             processedStores.push({
               id: store.id || store.name,
@@ -662,7 +722,6 @@ function UnifiedKpiDashboard() {
         setStores(processedStores);
       } catch (error) {
         console.error('Failed to load stores:', error);
-        // Keep empty stores array on error
         setStores([]);
       } finally {
         setLoading(false);
@@ -714,7 +773,7 @@ function UnifiedKpiDashboard() {
 
   return (
     <FadeIn>
-    <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {/* Connection Status Notification */}
         {connectionStatus.type && (
           <div className={`mb-4 p-4 rounded-lg border ${
@@ -736,23 +795,22 @@ function UnifiedKpiDashboard() {
           </div>
         )}
 
-      {/* Header Row */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <StoreSwitcher
-            stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
-            value={selected}
-            onChange={setSelected}
-            onAdd={handleAddStore}
-          />
-          
+        {/* Header Row */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <StoreSwitcher
+              stores={stores.map(({ id, name, platform }) => ({ id, name, platform }))}
+              value={selected}
+              onChange={setSelected}
+              onAdd={handleAddStore}
+            />
+          </div>
         </div>
-      </div>
 
         {/* KPI Cards */}
         <KPICards
-        stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
-        totals={totals}
+          stores={stores.map((s) => ({ id: s.id, name: s.name, platform: s.platform, health: s.metrics.health }))}
+          totals={totals}
         />
 
         {/* Analytics Charts - Adjusted Column Widths */}
@@ -769,9 +827,7 @@ function UnifiedKpiDashboard() {
 
         {/* Product Analytics Table */}
         <ProductAnalyticsTable stores={stores} />
-          </div>
+      </div>
     </FadeIn>
   );
 }
-
-export default Dashboard;

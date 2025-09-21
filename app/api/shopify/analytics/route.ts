@@ -1,32 +1,17 @@
-// Deno globals declaration
-declare const Deno: any;
-
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { createClient } from '@supabase/supabase-js'
+import { NextRequest, NextResponse } from 'next/server'
 
 interface ShopifyAnalyticsData {
-  // Revenue KPIs
   grossRevenue: number;
   netRevenue: number;
   revenueChangePercent: number;
-  
-  // Customer KPIs
   newCustomers: number;
   newCustomersChangePercent: number;
   activeCustomers: number;
   activeCustomersChangePercent: number;
-  
-  // Growth & Performance KPIs
   growthRate: number;
   conversionRate: number;
   cartAbandonmentRate: number;
-  
-  // Traffic Sources
   trafficSources: {
     ads: number;
     organic: number;
@@ -35,55 +20,44 @@ interface ShopifyAnalyticsData {
     direct: number;
     email: number;
   };
-  
-  // Additional Metrics
   totalOrders: number;
   averageOrderValue: number;
   totalVisitors: number;
   totalSessions: number;
 }
 
-serve(async (req: Request) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
-
+export async function POST(request: NextRequest) {
   try {
-    // Initialize Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
 
-    // Get request body
-    const { shop, accessToken, userId } = await req.json()
+    const { shop, accessToken, userId } = await request.json()
 
     if (!shop || !accessToken || !userId) {
-      return new Response(
-        JSON.stringify({ success: false, error: 'Missing required parameters: shop, accessToken, userId' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      return NextResponse.json(
+        { success: false, error: 'Missing required parameters' },
+        { status: 400 }
       )
     }
 
-    // Fetch comprehensive analytics from Shopify using read_analytics scope
+    // Fetch analytics data from Shopify
     const analyticsData = await fetchShopifyAnalytics(shop, accessToken)
 
-    // Store analytics data in Supabase
+    // Store in database
     await storeAnalyticsData(supabase, shop, userId, analyticsData)
 
-    return new Response(
-      JSON.stringify({ success: true, data: analyticsData }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return NextResponse.json({ success: true, data: analyticsData })
 
   } catch (error) {
     console.error('Error fetching Shopify analytics:', error)
-    return new Response(
-      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
     )
   }
-})
+}
 
 async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise<ShopifyAnalyticsData> {
   const baseUrl = `https://${shop}.myshopify.com/admin/api/2023-10`
@@ -93,43 +67,24 @@ async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise
   }
 
   try {
-    // Fetch multiple analytics endpoints in parallel
-    const [
-      ordersResponse,
-      customersResponse,
-      analyticsResponse,
-      reportsResponse,
-      trafficSourcesResponse
-    ] = await Promise.all([
-      // Orders data for revenue calculations
+    // Fetch orders and customers data
+    const [ordersResponse, customersResponse] = await Promise.all([
       fetch(`${baseUrl}/orders.json?status=any&limit=250&created_at_min=${getDateRange(30)}`, { headers }),
-      
-      // Customers data for customer metrics
       fetch(`${baseUrl}/customers.json?limit=250&created_at_min=${getDateRange(30)}`, { headers }),
-      
-      // Analytics data (if available in newer API versions)
-      fetch(`${baseUrl}/analytics.json?since=${getDateRange(30)}`, { headers }).catch(() => null),
-      
-      // Reports data for conversion rates and performance metrics
-      fetch(`${baseUrl}/reports.json?since=${getDateRange(30)}`, { headers }).catch(() => null),
-      
-      // Traffic sources (using custom implementation since Shopify doesn't provide direct API)
-      fetchTrafficSources(shop, accessToken)
     ])
 
-    // Process orders data
     const ordersData = await ordersResponse.json()
     const orders = ordersData.orders || []
     
-    // Process customers data
     const customersData = await customersResponse.json()
     const customers = customersData.customers || []
 
-    // Calculate revenue metrics
+    // Calculate current period orders (last 30 days)
     const currentPeriodOrders = orders.filter((order: any) => 
       new Date(order.created_at) >= new Date(getDateRange(30))
     )
     
+    // Calculate previous period orders (30-60 days ago)
     const previousPeriodOrders = orders.filter((order: any) => {
       const orderDate = new Date(order.created_at)
       const thirtyDaysAgo = new Date(getDateRange(60))
@@ -137,18 +92,21 @@ async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise
       return orderDate >= sixtyDaysAgo && orderDate < thirtyDaysAgo
     })
 
-    const grossRevenue = currentPeriodOrders.reduce((sum: number, order: any) => sum + (parseFloat(order.total_price) || 0), 0)
-    const previousGrossRevenue = previousPeriodOrders.reduce((sum: number, order: any) => sum + (parseFloat(order.total_price) || 0), 0)
+    // Revenue calculations
+    const grossRevenue = currentPeriodOrders.reduce((sum: number, order: any) => 
+      sum + (parseFloat(order.total_price) || 0), 0)
+    const previousGrossRevenue = previousPeriodOrders.reduce((sum: number, order: any) => 
+      sum + (parseFloat(order.total_price) || 0), 0)
     
-    // Calculate net revenue (gross - refunds - discounts)
-    const totalDiscounts = currentPeriodOrders.reduce((sum: number, order: any) => sum + (parseFloat(order.total_discounts) || 0), 0)
+    const totalDiscounts = currentPeriodOrders.reduce((sum: number, order: any) => 
+      sum + (parseFloat(order.total_discounts) || 0), 0)
     const netRevenue = grossRevenue - totalDiscounts
     
     const revenueChangePercent = previousGrossRevenue > 0 
       ? ((grossRevenue - previousGrossRevenue) / previousGrossRevenue) * 100 
       : 0
 
-    // Calculate customer metrics
+    // Customer calculations
     const currentPeriodCustomers = customers.filter((customer: any) => 
       new Date(customer.created_at) >= new Date(getDateRange(30))
     )
@@ -166,32 +124,20 @@ async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise
       ? ((newCustomers - previousNewCustomers) / previousNewCustomers) * 100 
       : 0
 
-    // Active customers (customers who made purchases in current period)
     const activeCustomers = new Set(currentPeriodOrders.map((order: any) => order.customer?.id).filter(Boolean)).size
     const previousActiveCustomers = new Set(previousPeriodOrders.map((order: any) => order.customer?.id).filter(Boolean)).size
     const activeCustomersChangePercent = previousActiveCustomers > 0 
       ? ((activeCustomers - previousActiveCustomers) / previousActiveCustomers) * 100 
       : 0
 
-    // Calculate conversion and performance metrics
+    // Order calculations
     const totalOrders = currentPeriodOrders.length
     const averageOrderValue = totalOrders > 0 ? grossRevenue / totalOrders : 0
-    
-    // Estimate traffic sources (Shopify doesn't provide direct traffic source data via API)
-    const trafficSources = await trafficSourcesResponse
 
-    // Calculate conversion rate (orders / sessions - estimated)
-    const estimatedSessions = Math.round(totalOrders / 0.03) // Assume 3% conversion rate as baseline
+    // Estimated metrics (since Shopify doesn't provide direct access)
+    const estimatedSessions = Math.round(totalOrders / 0.03) // 3% conversion baseline
     const conversionRate = estimatedSessions > 0 ? (totalOrders / estimatedSessions) * 100 : 0
-
-    // Calculate cart abandonment rate (estimated)
-    const estimatedCartAbandonmentRate = 70 // Industry average, would need checkout API for accurate data
-
-    // Calculate growth rate (revenue growth)
-    const growthRate = revenueChangePercent
-
-    // Estimate total visitors and sessions
-    const totalVisitors = Math.round(estimatedSessions * 0.8) // Assume 80% of sessions are unique visitors
+    const totalVisitors = Math.round(estimatedSessions * 0.8)
     const totalSessions = estimatedSessions
 
     return {
@@ -202,10 +148,17 @@ async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise
       newCustomersChangePercent,
       activeCustomers,
       activeCustomersChangePercent,
-      growthRate,
+      growthRate: revenueChangePercent,
       conversionRate,
-      cartAbandonmentRate: estimatedCartAbandonmentRate,
-      trafficSources,
+      cartAbandonmentRate: 70, // Industry average
+      trafficSources: {
+        ads: 25,
+        organic: 35,
+        social: 15,
+        referral: 10,
+        direct: 10,
+        email: 5,
+      },
       totalOrders,
       averageOrderValue,
       totalVisitors,
@@ -214,34 +167,17 @@ async function fetchShopifyAnalytics(shop: string, accessToken: string): Promise
 
   } catch (error) {
     console.error('Error fetching Shopify analytics:', error)
-    throw new Error(`Failed to fetch analytics from Shopify: ${error instanceof Error ? error.message : 'Unknown error'}`)
-  }
-}
-
-async function fetchTrafficSources(shop: string, accessToken: string) {
-  // Since Shopify doesn't provide direct traffic source data via their API,
-  // we'll return estimated values based on common e-commerce patterns
-  // In a real implementation, you might integrate with Google Analytics API
-  // or use Shopify's Analytics API if available
-  
-  return {
-    ads: 25,      // 25% from paid advertising
-    organic: 35,  // 35% from organic search
-    social: 15,   // 15% from social media
-    referral: 10, // 10% from referrals
-    direct: 10,   // 10% direct traffic
-    email: 5,     // 5% from email marketing
+    throw new Error(`Failed to fetch analytics: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }
 
 async function storeAnalyticsData(supabase: any, shop: string, userId: string, analyticsData: ShopifyAnalyticsData) {
   try {
-    // Get today's date in YYYY-MM-DD format
     const today = new Date().toISOString().split('T')[0];
     const startOfDay = `${today}T00:00:00.000Z`;
     const endOfDay = `${today}T23:59:59.999Z`;
 
-    // Check if snapshot already exists for today
+    // Check if snapshot exists for today
     const { data: existingSnapshot, error: selectError } = await supabase
       .from('analytics_snapshots')
       .select('id')
@@ -251,26 +187,22 @@ async function storeAnalyticsData(supabase: any, shop: string, userId: string, a
       .lte('captured_at', endOfDay)
       .single();
 
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 is "not found" error
+    if (selectError && selectError.code !== 'PGRST116') {
       console.error('Error checking existing snapshot:', selectError);
     }
 
     if (existingSnapshot) {
-      // Update existing snapshot
-      const { error: updateError } = await supabase
+      // Update existing
+      await supabase
         .from('analytics_snapshots')
         .update({
           data: analyticsData,
           captured_at: new Date().toISOString(),
         })
         .eq('id', existingSnapshot.id);
-
-      if (updateError) {
-        console.error('Error updating analytics snapshot:', updateError);
-      }
     } else {
-      // Insert new snapshot
-      const { error: insertError } = await supabase
+      // Insert new
+      await supabase
         .from('analytics_snapshots')
         .insert({
           shop,
@@ -278,14 +210,10 @@ async function storeAnalyticsData(supabase: any, shop: string, userId: string, a
           data: analyticsData,
           captured_at: new Date().toISOString(),
         });
-
-      if (insertError) {
-        console.error('Error inserting analytics snapshot:', insertError);
-      }
     }
 
-    // Also update the kpi_daily table with current day's data
-    const { error: kpiError } = await supabase
+    // Update KPI daily table
+    await supabase
       .from('kpi_daily')
       .upsert({
         shop,
@@ -299,10 +227,6 @@ async function storeAnalyticsData(supabase: any, shop: string, userId: string, a
       }, {
         onConflict: 'shop,date'
       });
-
-    if (kpiError) {
-      console.error('Error updating KPI daily data:', kpiError);
-    }
 
   } catch (error) {
     console.error('Error storing analytics data:', error);
