@@ -662,7 +662,6 @@ function UnifiedKpiDashboardContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shop: store.shop || store.name,
-          accessToken: store.access_token,
           userId: userId
         })
       });
@@ -725,11 +724,8 @@ function UnifiedKpiDashboardContent() {
         
         if (shopifyData.connected && shopifyData.stores && user) {
           for (const store of shopifyData.stores) {
-            // Fetch fresh analytics data
-            let analyticsData = null;
-            if (store.access_token) {
-              analyticsData = await fetchShopifyAnalytics(store, user.id);
-            }
+            // Fetch fresh analytics data (server will resolve access token)
+            let analyticsData = await fetchShopifyAnalytics(store, user.id);
             
             processedStores.push({
               id: store.id || store.name,

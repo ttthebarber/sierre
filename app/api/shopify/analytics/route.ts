@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { getShopToken } from '@/lib/integrations/shopifyDb'
 
 interface ShopifyAnalyticsData {
   grossRevenue: number;
@@ -35,15 +36,29 @@ export async function POST(request: NextRequest) {
 
     const { shop, accessToken, userId } = await request.json()
 
-    if (!shop || !accessToken || !userId) {
+    if (!shop || !userId) {
       return NextResponse.json(
-        { success: false, error: 'Missing required parameters' },
+        { success: false, error: 'Missing required parameters: shop, userId' },
+        { status: 400 }
+      )
+    }
+
+    // Prefer server-side token lookup; do NOT rely on client-provided token
+    let token = accessToken as string | undefined
+    if (!token) {
+      const creds = await getShopToken(shop)
+      token = creds?.access_token
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { success: false, error: 'Shop not connected or missing access token' },
         { status: 400 }
       )
     }
 
     // Fetch analytics data from Shopify
-    const analyticsData = await fetchShopifyAnalytics(shop, accessToken)
+    const analyticsData = await fetchShopifyAnalytics(shop, token)
 
     // Store in database
     await storeAnalyticsData(supabase, shop, userId, analyticsData)
