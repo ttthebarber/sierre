@@ -11,9 +11,18 @@ import { FadeIn } from "@/components/ui/fade-in";
 import { useApiClientSafe } from "@/lib/hooks/use-api-with-errors";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { DeleteAccountModal } from "@/components/auth/delete-account-modal";
+import { ConnectedStoresList } from "@/components/ui/connected-stores-list";
+
+interface ConnectedStore {
+  id: string;
+  name: string;
+  platform: string;
+  connected_at: string;
+}
 
 interface ShopifyStatus {
   connected: boolean;
+  stores: ConnectedStore[];
   connected_at: string | null;
   last_orders_sync_at: string | null;
   last_products_sync_at: string | null;
@@ -44,20 +53,23 @@ export default function SettingsPage() {
   useEffect(() => {
     const loadStatus = async () => {
       try {
-        // For now, we'll simulate the status since the API methods don't exist yet
-        // In a real implementation, you'd call the actual API endpoints
-        setShopifyStatus({
-          connected: false,
-          connected_at: null,
-          last_orders_sync_at: null,
-          last_products_sync_at: null,
-          last_inventory_sync_at: null,
-        });
-
-        // Fetch Shopify status for AI insights
+        // Fetch Shopify status and stores
         try {
-          const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { connected: boolean };
+          const shopifyData = await apiClient.get('/integrations/shopify/status', false) as { 
+            connected: boolean;
+            stores: ConnectedStore[];
+            connected_at: string | null;
+          };
           
+          setShopifyStatus({
+            connected: shopifyData.connected,
+            stores: shopifyData.stores || [],
+            connected_at: shopifyData.connected_at,
+            last_orders_sync_at: null, // TODO: Add these to API response if needed
+            last_products_sync_at: null,
+            last_inventory_sync_at: null,
+          });
+
           setAiInsightsStatus({
             isActive: shopifyData.connected,
             totalInsights: 0, // TODO: Calculate from actual insights
@@ -68,7 +80,17 @@ export default function SettingsPage() {
             }
           });
         } catch (error) {
-          // Silently handle AI insights errors
+          console.error("Failed to fetch Shopify status:", error);
+          // Set default values on error
+          setShopifyStatus({
+            connected: false,
+            stores: [],
+            connected_at: null,
+            last_orders_sync_at: null,
+            last_products_sync_at: null,
+            last_inventory_sync_at: null,
+          });
+          
           setAiInsightsStatus({
             isActive: false,
             totalInsights: 0,
@@ -86,7 +108,7 @@ export default function SettingsPage() {
       }
     };
     loadStatus();
-  }, [shop, apiClient]);
+  }, [apiClient]);
 
   const handleSync = async () => {
     try {
@@ -106,6 +128,35 @@ export default function SettingsPage() {
       window.location.reload();
     } catch (error: any) {
       alert(`Failed to disconnect Shopify: ${error.message}`);
+    }
+  };
+
+  const handleStoreSync = async (storeId: string) => {
+    try {
+      // For now, use the existing sync functionality
+      // In the future, you could modify the API to accept store ID
+      await shopifyApi.sync(shop);
+      alert('Store synced successfully!');
+      window.location.reload();
+    } catch (error: any) {
+      alert(`Failed to sync store: ${error.message}`);
+    }
+  };
+
+  const handleStoreDisconnect = async (storeId: string) => {
+    const store = shopifyStatus?.stores.find(s => s.id === storeId);
+    if (!store) return;
+    
+    if (!confirm(`Are you sure you want to disconnect "${store.name}"?`)) return;
+    
+    try {
+      // For now, use the existing disconnect functionality
+      // In the future, you could modify the API to accept store ID
+      await shopifyApi.disconnect(shop);
+      alert(`Store "${store.name}" disconnected successfully!`);
+      window.location.reload();
+    } catch (error: any) {
+      alert(`Failed to disconnect store: ${error.message}`);
     }
   };
 
@@ -133,7 +184,16 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Shopify */}
+            {/* Connected Stores List */}
+            {shopifyStatus?.stores && shopifyStatus.stores.length > 0 && (
+              <ConnectedStoresList 
+                stores={shopifyStatus.stores}
+                onSync={handleStoreSync}
+                onDisconnect={handleStoreDisconnect}
+              />
+            )}
+            
+            {/* Shopify Connect Card */}
             <div className="border border-gray-200 rounded-lg p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
